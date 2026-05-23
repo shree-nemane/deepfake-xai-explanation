@@ -25,42 +25,32 @@ Move beyond opaque, black-box deepfake classifiers by delivering transparent, mu
 - ✓ **DB-01**: Persistent relational database schema in SQLAlchemy mapping sessions to Report, AgentOutput, EvidenceSegment, ConsensusEvent, and XAIArtifact rows. — *Phase 0*
 - ✓ **UI-01**: React uploader dashboard rendering real-time analysis charts, consensus panels, reliability trends, and temporal spectrogram heatmaps. — *Phase 0*
 - ✓ **TST-01**: Automated Pytest harness exercising orchestrator pipelines and agent robustness on committed mock audio fixtures. — *Phase 0*
+- ✓ **DB-02**: Active code no longer references `backend/database_legacy/` or `forensic_reports_legacy.db`; persistence is centered on `backend/persistence/database.py`. — *Phase 1*
+- ✓ **DB-03**: SQLAlchemy schemas store SHAP arrays, analytical counterfactual payloads, evidence graphs, structured narratives, consensus event details, and processing metadata. — *Phase 1*
+- ✓ **SUP-02**: Consensus applies continuous reliability suppression, agent-specific damping, and fail-closed inconclusive behavior below `0.20` reliability. — *Phase 1*
+- ✓ **XAI-10**: Consensus contradictions map to explicit voice clone, localized splice, and partial synthesis threat warnings with persisted diagnostic metadata. — *Phase 2*
+- ✓ **TST-02**: Test folders are organized under `tests/unit/`, `tests/integration/`, `tests/consensus/`, `tests/xai/`, `tests/performance/`, `tests/benchmark/`, and `tests/datasets/`. — *Phase 1*
+- ✓ **TST-03**: Consensus tests validate reliability suppression math, agent-specific damping, schema persistence, and fail-closed behavior. — *Phase 1*
+- ✓ **TST-04**: Consensus contradiction tests validate warning thresholds, priority rules, persistence payloads, and response serialization. — *Phase 2*
+- ✓ **TST-07**: Temporal alignment tests validate masked padding, stream alignment, truncation safety, and boundary tolerance. — *Phase 2*
 
 ### Active
 
 *The following active requirements define the scope of the current upgrade milestone (v1 Release):*
-
-**Database & Model Consolidation:**
-- [ ] **DB-02**: Fully deprecate the legacy database files and remove legacy models/session endpoints under `backend/database_legacy/` and legacy services.
-- [ ] **DB-03**: Expand SQLAlchemy schemas to store rich SHAP attribution arrays, Level 1 Counterfactual analytical sensitivities, and structured template narrative strings.
-
-**Multi-Level Dynamic Suppression:**
-- [ ] **SUP-02**: Implement a multi-level dynamic reliability suppression policy based on the Reliability Score:
-  - `> 0.80` -> Full contribution (no damping)
-  - `0.60 - 0.80` -> Mild confidence damping
-  - `0.40 - 0.60` -> Moderate uncertainty increase
-  - `0.20 - 0.40` -> Heavy confidence reduction
-  - `< 0.20` -> Fail-closed execution (mutes agents, outputs safe `inconclusive` global verdict)
 
 **Shapley Coalition & Level 1 Counterfactual XAI:**
 - [ ] **XAI-06**: Implement exact, deterministic Shapley value calculations over calibrated expert support vectors across all $2^4 = 16$ coalitions per chunk (WavLM, ConvNext, AASIST, Acoustic) without Monte Carlo approximations.
 - [ ] **XAI-07**: Build Level 1 Analytical Sensitivity engine computing local consensus-to-expert gradients to show how sensitive the global verdict is to each agent.
 - [ ] **XAI-08**: Develop a 6-layer directed Evidence Graph mapping data flow: Audio Input (L1) -> Preprocessing/Reliability (L2) -> Forensic Agents (L3) -> Consensus Arbitration (L4) -> XAI Artifacts (L5) -> Verdict & Narrative (L6).
 - [ ] **XAI-09**: Implement a Layer 1 Deterministic Narrative Engine utilizing rule-driven templates to translate findings, z-score anomalies, and segment alignments into structured evidence reports.
-- [ ] **XAI-10**: Elevate segment contradictions into active warnings, mapping specific expert splits (e.g. WavLM fake + Acoustic real) to descriptive threat indicators (e.g. "Voice Clone Suspected").
 
 **Hybrid UI & Real-Time Feedback:**
 - [ ] **UI-02**: Create an expandable **Explainability Drawer** on the React Dashboard housing SHAP horizontal bar charts, Counterfactual sensitivity controls, and the Plotly-based Evidence Graph.
 - [ ] **UI-03**: Build a **Detailed Forensic Explanation Tab** to render human-readable narratives, contradiction warnings, and tabular evidence breakdowns.
 - [ ] **UI-04**: Implement a real-time **Multi-Stage Progress Indicator** on the uploader card displaying current active steps during the analysis pipeline.
 
-**Comprehensive Forensic Test Harness:**
-- [ ] **TST-02**: Reorganize testing directory folders under `tests/unit/`, `tests/integration/`, `tests/consensus/`, `tests/xai/`, `tests/performance/`, `tests/benchmark/`, and `tests/datasets/`.
-- [ ] **TST-03**: Develop dedicated unit and integration assertions verifying the Multi-Level Suppression Engine.
-- [ ] **TST-04**: Develop unit tests verifying ConsensusEvent contradiction logic and warning triggers.
 - [ ] **TST-05**: Develop unit tests asserting exact Shapley mathematical value correctness.
 - [ ] **TST-06**: Develop unit tests validating Counterfactual analytical sensitivity estimates.
-- [ ] **TST-07**: Develop robust integration assertions confirming temporal segment alignment across streams.
 
 ### Out of Scope
 
@@ -71,7 +61,7 @@ Move beyond opaque, black-box deepfake classifiers by delivering transparent, mu
 
 ## Context
 
-The system represents an upgrade of a local digital audio forensics project. The baseline has successfully laid out preprocessing and basic agent registrations, but suffers from split legacy codebases, uncalibrated confidence scales under noisy conditions, lack of deep XAI analytics (SHAP, counterfactuals), and a generic uploader interface that hides contradictions.
+The system represents an upgrade of a local digital audio forensics project. The baseline has successfully laid out preprocessing and basic agent registrations. The current codebase has consolidated active persistence, added reliability-aware consensus suppression, and implemented contradiction warnings; the remaining v1 gaps are exact SHAP computation, analytical counterfactuals, evidence graph generation, deterministic narrative depth, and the upgraded investigation UI.
 
 ## Constraints
 
@@ -107,4 +97,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-23 after project initialization*
+*Last updated: 2026-05-23 after Phase 1/2 reconciliation*

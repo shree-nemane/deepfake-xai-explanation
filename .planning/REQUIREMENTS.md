@@ -7,12 +7,12 @@
 
 ### Database & Model Clean-up
 
-- [ ] **DB-02**: Fully deprecate all legacy database schemas, connections, and files under `backend/database_legacy/` and remove associated legacy services.
-- [ ] **DB-03**: Expand current SQLAlchemy tables to persist SHAP attribution arrays, Level 1 analytical sensitivity gradients, and structured deterministic explanation narrative strings.
+- [x] **DB-02**: Fully deprecate all legacy database schemas, connections, and files under `backend/database_legacy/` and remove associated legacy services.
+- [x] **DB-03**: Expand current SQLAlchemy tables to persist SHAP attribution arrays, Level 1 analytical sensitivity gradients, and structured deterministic explanation narrative strings.
 
 ### Dynamic Calibration & Suppression
 
-- [ ] **SUP-02**: Implement a multi-level dynamic reliability suppression policy that dampens agent confidence weights based on the composite Reliability Score:
+- [x] **SUP-02**: Implement a multi-level dynamic reliability suppression policy that dampens agent confidence weights based on the composite Reliability Score:
   - `Reliability > 0.80`: Full contribution (1.0 scale)
   - `0.60 - 0.80`: Mild confidence damping
   - `0.40 - 0.60`: Moderate uncertainty increase
@@ -25,7 +25,7 @@
 - [ ] **XAI-07**: Build Level 1 Analytical Sensitivity engine to compute consensus-to-expert mathematical derivatives, estimating local verdict sensitivity.
 - [ ] **XAI-08**: Model and generate a 6-layer directed Evidence Graph mapping: Audio Input (L1) -> Preprocessing/Reliability (L2) -> Forensic Agents (L3) -> Consensus Arbitration (L4) -> XAI Artifacts (L5) -> Verdict & Narrative (L6).
 - [ ] **XAI-09**: Implement Layer 1 Deterministic Narrative Engine to generate structured evidence findings, anomaly metrics, and timeline ranges.
-- [ ] **XAI-10**: Map expert segment contradictions to explicit threat warnings (e.g. voice cloning, localized splices) treated as valuable forensic indicators.
+- [x] **XAI-10**: Map expert segment contradictions to explicit threat warnings (e.g. voice cloning, localized splices) treated as valuable forensic indicators.
 
 ### Front-End Dashboard Upgrade
 
@@ -35,12 +35,12 @@
 
 ### Multi-Tiered Testing Harness
 
-- [ ] **TST-02**: Restructure tests directory folder trees to segregate `unit/`, `integration/`, `consensus/`, `xai/`, `performance/`, `benchmark/`, and `datasets/`.
-- [ ] **TST-03**: Develop comprehensive Pytest cases validating Suppression Engine damping behaviors.
-- [ ] **TST-04**: Develop comprehensive Pytest cases asserting ConsensusEvent contradiction logic and warning thresholds.
+- [x] **TST-02**: Restructure tests directory folder trees to segregate `unit/`, `integration/`, `consensus/`, `xai/`, `performance/`, `benchmark/`, and `datasets/`.
+- [x] **TST-03**: Develop comprehensive Pytest cases validating Suppression Engine damping behaviors.
+- [x] **TST-04**: Develop comprehensive Pytest cases asserting ConsensusEvent contradiction logic and warning thresholds.
 - [ ] **TST-05**: Develop comprehensive Pytest cases verifying exact Shapley mathematical values.
 - [ ] **TST-06**: Develop comprehensive Pytest cases verifying Counterfactual analytical sensitivity gradients.
-- [ ] **TST-07**: Develop robust integration tests verifying temporal segment alignment across resampled streams.
+- [x] **TST-07**: Develop robust integration tests verifying temporal segment alignment across resampled streams.
 
 ---
 
@@ -71,23 +71,23 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-02 | Phase 1 | Pending |
-| DB-03 | Phase 1 | Pending |
-| SUP-02 | Phase 1 | Pending |
+| DB-02 | Phase 1 | Complete |
+| DB-03 | Phase 1 | Complete |
+| SUP-02 | Phase 1 | Complete |
 | XAI-06 | Phase 3 | Pending |
 | XAI-07 | Phase 3 | Pending |
 | XAI-08 | Phase 4 | Pending |
 | XAI-09 | Phase 3 | Pending |
-| XAI-10 | Phase 2 | Pending |
+| XAI-10 | Phase 2 | Complete |
 | UI-02 | Phase 5 | Pending |
 | UI-03 | Phase 5 | Pending |
 | UI-04 | Phase 4 | Pending |
-| TST-02 | Phase 1 | Pending |
-| TST-03 | Phase 1 | Pending |
-| TST-04 | Phase 2 | Pending |
+| TST-02 | Phase 1 | Complete |
+| TST-03 | Phase 1 | Complete |
+| TST-04 | Phase 2 | Complete |
 | TST-05 | Phase 3 | Pending |
 | TST-06 | Phase 3 | Pending |
-| TST-07 | Phase 2 | Pending |
+| TST-07 | Phase 2 | Complete |
 
 **Coverage:**
 - v1 requirements: 17 total
@@ -96,4 +96,4 @@
 
 ---
 *Requirements defined: 2026-05-23*
-*Last updated: 2026-05-23 after initial definition*
+*Last updated: 2026-05-23 after Phase 1/2 reconciliation*

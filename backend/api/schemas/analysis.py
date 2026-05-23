@@ -1,16 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 
 class AgentOutputSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     verdict: str
     confidence: float
     uncertainty: float
     evidence: Optional[Dict[str, Any]] = None
-
-    class Config:
-        from_attributes = True
 
 class ConsensusSchema(BaseModel):
     verdict: str
@@ -31,22 +30,24 @@ class TimelineEventSchema(BaseModel):
     convergence_strength: float
     details: Optional[Dict[str, Any]] = None
     deep_reasoning: Optional[List[str]] = None
+    threat_warnings: Optional[List[Dict[str, Any]]] = None
 
 class SampleRatesSchema(BaseModel):
     semantic: int
     forensic: int
 
 class ProcessingMetadataSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     chunk_duration: float
     overlap: float
     sample_rates: SampleRatesSchema
     schema_version: str
     pipeline_version: str
 
-    class Config:
-        from_attributes = True
-
 class AnalysisResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     filename: str
     consensus: ConsensusSchema
@@ -58,6 +59,3 @@ class AnalysisResponse(BaseModel):
     heatmap_base64: Optional[str] = None
     processing_metadata: Optional[ProcessingMetadataSchema] = None
     created_at: datetime
-
-    class Config:
-        from_attributes = True

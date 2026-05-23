@@ -18,7 +18,7 @@ from backend.orchestration.forensic_orchestrator import (
 )
 
 
-def assert_current_schema_accepts_inconclusive():
+def test_current_schema_accepts_inconclusive():
     response = AnalysisResponse(
         id="validation-report",
         filename="sample.wav",
@@ -54,7 +54,7 @@ def assert_current_schema_accepts_inconclusive():
     assert response.consensus.verdict == "inconclusive"
 
 
-def assert_consensus_fail_closed():
+def test_consensus_fail_closed():
     engine = ConsensusEngine()
 
     empty = engine.evaluate_chunk_consensus({}, global_reliability=1.0)
@@ -82,7 +82,7 @@ def assert_consensus_fail_closed():
     assert tie["verdict"] == "inconclusive"
 
 
-def assert_empty_registry_guard():
+def test_empty_registry_guard():
     saved_agents = dict(agent_registry._agents)
     try:
         agent_registry._agents.clear()
@@ -98,7 +98,7 @@ def assert_empty_registry_guard():
         agent_registry._agents.update(saved_agents)
 
 
-def assert_fallback_is_visible():
+def test_fallback_is_visible():
     fallback = ConvNextAgent._fallback_verdict("model unavailable")
     assert fallback["verdict"] == "inconclusive"
     assert fallback["evidence"]["fallback_reason"] == "inference_unavailable"
@@ -106,10 +106,10 @@ def assert_fallback_is_visible():
 
 if __name__ == "__main__":
     try:
-        assert_current_schema_accepts_inconclusive()
-        assert_consensus_fail_closed()
-        assert_empty_registry_guard()
-        assert_fallback_is_visible()
+        test_current_schema_accepts_inconclusive()
+        test_consensus_fail_closed()
+        test_empty_registry_guard()
+        test_fallback_is_visible()
         print("Validation successful: current schema and fail-closed behavior verified.")
     except Exception:
         print("ERROR CAUGHT DURING VALIDATION:")
