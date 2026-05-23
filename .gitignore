@@ -163,5 +163,6 @@ uploads/
 .agent/
 .codex/
 .gemini/
+.cursor/
 
 evaluation_results/
