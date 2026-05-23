@@ -1,6 +1,145 @@
 class CounterfactualEngine:
+    """Level 1 analytical consensus sensitivity engine."""
+
     def __init__(self):
         pass
+
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        try:
+            if value is None:
+                return default
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _agent_vector(self, agent_name, details):
+        adjusted_confidence = self._safe_float(
+            details.get("adjusted_confidence", details.get("calibrated_confidence", 0.5)),
+            0.5,
+        )
+        adjusted_uncertainty = self._safe_float(
+            details.get("adjusted_uncertainty", details.get("calibrated_uncertainty", 1.0)),
+            1.0,
+        )
+        suppression_factor = self._safe_float(details.get("suppression_factor", 1.0), 1.0)
+        effective_reliability = self._safe_float(details.get("effective_reliability", 1.0), 1.0)
+        weight = max(0.0, effective_reliability * max(0.0, 1.0 - adjusted_uncertainty) * suppression_factor)
+        return {
+            "agent": agent_name,
+            "verdict": details.get("verdict", "inconclusive"),
+            "adjusted_confidence": adjusted_confidence,
+            "adjusted_uncertainty": adjusted_uncertainty,
+            "suppression_factor": suppression_factor,
+            "effective_reliability": effective_reliability,
+            "weight": weight,
+        }
+
+    def _support_totals(self, vectors):
+        fake_support = 0.0
+        real_support = 0.0
+        for vector in vectors.values():
+            confidence = vector["adjusted_confidence"]
+            weight = vector["weight"]
+            if vector["verdict"] == "fake":
+                fake_support += confidence * weight
+                real_support += (1.0 - confidence) * weight
+            elif vector["verdict"] == "real":
+                real_support += confidence * weight
+                fake_support += (1.0 - confidence) * weight
+        return fake_support, real_support
+
+    def compute_consensus_sensitivity(self, calibrated_details, fake_probability=None, real_probability=None):
+        """Compute local analytical sensitivity for calibrated consensus details."""
+        vectors = {
+            name: self._agent_vector(name, details)
+            for name, details in (calibrated_details or {}).items()
+            if details.get("verdict") in {"fake", "real"}
+        }
+        fake_support, real_support = self._support_totals(vectors)
+        total_support = fake_support + real_support
+
+        if total_support <= 0.0:
+            baseline_fake = 0.5 if fake_probability is None else self._safe_float(fake_probability, 0.5)
+            baseline_real = 0.5 if real_probability is None else self._safe_float(real_probability, 0.5)
+            return {
+                "method": "analytical_level_1",
+                "baseline": {
+                    "fake_probability": baseline_fake,
+                    "real_probability": baseline_real,
+                    "fake_support": fake_support,
+                    "real_support": real_support,
+                },
+                "sensitivities": {
+                    name: {
+                        "gradient": 0.0,
+                        "direction": "neutral",
+                        "current_confidence": vector["adjusted_confidence"],
+                        "weight": vector["weight"],
+                        "estimated_delta_for_10pct": 0.0,
+                        "statement": f"{name} has no local effect because its calibrated support is zero.",
+                    }
+                    for name, vector in vectors.items()
+                },
+                "summary": "Consensus sensitivity is neutral because calibrated support is zero.",
+            }
+
+        baseline_fake = fake_support / total_support
+        baseline_real = real_support / total_support
+        if fake_probability is not None:
+            baseline_fake = self._safe_float(fake_probability, baseline_fake)
+        if real_probability is not None:
+            baseline_real = self._safe_float(real_probability, baseline_real)
+
+        sensitivities = {}
+        for name, vector in vectors.items():
+            if vector["verdict"] == "fake":
+                gradient = vector["weight"] / total_support
+                direction = "increases_fake_probability"
+                action = "decreased"
+                effect = "decrease"
+            elif vector["verdict"] == "real":
+                gradient = -vector["weight"] / total_support
+                direction = "decreases_fake_probability"
+                action = "increased"
+                effect = "decrease"
+            else:
+                gradient = 0.0
+                direction = "neutral"
+                action = "changed"
+                effect = "change"
+
+            delta_for_10pct = gradient * 0.10
+            sensitivities[name] = {
+                "gradient": gradient,
+                "direction": direction,
+                "current_confidence": vector["adjusted_confidence"],
+                "weight": vector["weight"],
+                "estimated_delta_for_10pct": delta_for_10pct,
+                "statement": (
+                    f"If {name} adjusted confidence {action} by 10%, "
+                    f"fake probability would {effect} by about {abs(delta_for_10pct):.3f}."
+                ),
+            }
+
+        ranked = sorted(sensitivities.items(), key=lambda item: abs(item[1]["gradient"]), reverse=True)
+        if ranked:
+            top_name, top = ranked[0]
+            summary = f"{top_name} has the strongest local sensitivity ({top['gradient']:.3f})."
+        else:
+            summary = "No voting agents were available for analytical sensitivity."
+
+        return {
+            "method": "analytical_level_1",
+            "baseline": {
+                "fake_probability": baseline_fake,
+                "real_probability": baseline_real,
+                "fake_support": fake_support,
+                "real_support": real_support,
+            },
+            "sensitivities": sensitivities,
+            "summary": summary,
+        }
 
     def generate(self, features_dict, risk_threshold=0.5):
         """

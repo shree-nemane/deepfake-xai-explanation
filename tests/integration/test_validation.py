@@ -46,12 +46,26 @@ def test_current_schema_accepts_inconclusive():
                 "confidence": 0.0,
                 "convergence_strength": 0.0,
                 "details": {},
+                "threat_warnings": [],
             }
         ],
+        xai={
+            "shap_values": {"method": "exact_consensus_shap", "chunks": []},
+            "counterfactuals": {"method": "analytical_level_1", "chunks": []},
+            "shap_summary": "No Shapley values available.",
+            "counterfactual_summary": "No counterfactuals available.",
+        },
+        narrative={
+            "structured_summary": "## Finding\nInconclusive.",
+            "human_summary": "Inconclusive forensic result.",
+            "metadata": {"narrative_version": "deterministic_v1"},
+        },
         heatmap_base64=None,
         created_at="2026-05-21T00:00:00",
     )
     assert response.consensus.verdict == "inconclusive"
+    assert response.xai["shap_values"]["method"] == "exact_consensus_shap"
+    assert response.narrative["metadata"]["narrative_version"] == "deterministic_v1"
 
 
 def test_consensus_fail_closed():

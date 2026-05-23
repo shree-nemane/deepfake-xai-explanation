@@ -12,6 +12,9 @@ from backend.persistence.database import get_db, Report, AgentOutput, EvidenceSe
 from backend.api.schemas.analysis import AnalysisResponse
 from backend.preprocessing.audio_processor import AudioProcessor
 from backend.orchestration.forensic_orchestrator import AnalysisUnavailableError, ForensicOrchestrator
+from backend.explainability.counterfactuals.counterfactual_engine import CounterfactualEngine
+from backend.explainability.narrative_engine import NarrativeEngine
+from backend.explainability.shap.shap_engine import SHAPEngine
 from enum import Enum as PyEnum
 
 router = APIRouter(prefix="/analyze", tags=["analysis"])
@@ -209,6 +212,94 @@ def _build_diagnostics(global_consensus, frontend_agents, chunk_consensus):
         "event_counts": dict(event_counts),
         "agent_count": len(frontend_agents),
         "chunk_count": len(chunk_consensus),
+    }
+
+
+def _build_xai_payload(chunk_consensus):
+    shap_engine = SHAPEngine()
+    counterfactual_engine = CounterfactualEngine()
+    shap_chunks = []
+    counterfactual_chunks = []
+    aggregate_shap = defaultdict(float)
+
+    for index, chunk in enumerate(chunk_consensus):
+        calibrated_details = chunk.get("calibrated_details", {})
+        shap_payload = shap_engine.compute_consensus_shap(calibrated_details)
+        counterfactual_payload = counterfactual_engine.compute_consensus_sensitivity(
+            calibrated_details,
+            chunk.get("fake_probability"),
+            chunk.get("real_probability"),
+        )
+
+        for agent_name, value in shap_payload.get("values", {}).items():
+            aggregate_shap[agent_name] += _safe_float(value)
+
+        shap_chunks.append({
+            "chunk_index": index,
+            "start_time": chunk.get("start_time"),
+            "end_time": chunk.get("end_time"),
+            **shap_payload,
+        })
+        counterfactual_chunks.append({
+            "chunk_index": index,
+            "start_time": chunk.get("start_time"),
+            "end_time": chunk.get("end_time"),
+            **counterfactual_payload,
+        })
+
+    if shap_chunks:
+        avg_shap = {
+            agent_name: value / len(shap_chunks)
+            for agent_name, value in aggregate_shap.items()
+        }
+    else:
+        avg_shap = {}
+
+    top_shap = sorted(avg_shap.items(), key=lambda item: abs(item[1]), reverse=True)
+    shap_summary = (
+        "Exact Shapley attributions computed over calibrated consensus coalitions."
+        if shap_chunks else
+        "No chunk-level calibrated consensus details were available for Shapley attribution."
+    )
+    if top_shap:
+        shap_summary = f"{shap_summary} Top contributor: {top_shap[0][0]} ({top_shap[0][1]:.3f})."
+
+    top_sensitivity = None
+    for chunk in counterfactual_chunks:
+        for agent_name, info in chunk.get("sensitivities", {}).items():
+            magnitude = abs(_safe_float(info.get("gradient")))
+            if top_sensitivity is None or magnitude > top_sensitivity["magnitude"]:
+                top_sensitivity = {
+                    "agent": agent_name,
+                    "magnitude": magnitude,
+                    "statement": info.get("statement", ""),
+                }
+
+    counterfactual_summary = (
+        top_sensitivity["statement"]
+        if top_sensitivity else
+        "No analytical consensus sensitivity was available."
+    )
+
+    return {
+        "shap_values": {
+            "method": "exact_consensus_shap",
+            "chunks": shap_chunks,
+            "summary": {
+                "average_values": avg_shap,
+                "top_contributors": [
+                    {"agent": agent_name, "value": value}
+                    for agent_name, value in top_shap
+                ],
+            },
+        },
+        "counterfactuals": {
+            "method": "analytical_level_1",
+            "chunks": counterfactual_chunks,
+            "summary": counterfactual_summary,
+        },
+        "shap_summary": shap_summary,
+        "counterfactual_summary": counterfactual_summary,
     }
 
 @router.get("/history")
@@ -414,30 +505,37 @@ async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_
                 xai_version="v1"
             ))
             
+        preprocessing = _build_preprocessing_summary(streams, len(chunk_consensus))
+        feature_analysis = _build_feature_analysis(agent_results, frontend_agents, chunk_consensus, preprocessing)
+        diagnostics = _build_diagnostics(global_consensus, frontend_agents, chunk_consensus)
+        xai_payload = _build_xai_payload(chunk_consensus)
+
         # Save rich XAI Artifact details
         xai_art = XAIArtifact(
             report_id=report.id,
-            shap_values={"segment_contributions": [c.get("fake_probability", 0.5) for c in chunk_consensus]},
-            counterfactuals={"sensitivity_estimates": [c.get("conflict_severity", 0.0) for c in chunk_consensus]},
-            shap_summary="Exact Shapley attributions computed over active agent coalitions.",
-            counterfactual_summary="Local derivative analytical verdict sensitivity boundaries.",
+            shap_values=xai_payload["shap_values"],
+            counterfactuals=xai_payload["counterfactuals"],
+            shap_summary=xai_payload["shap_summary"],
+            counterfactual_summary=xai_payload["counterfactual_summary"],
             xai_version="v1"
         )
         db.add(xai_art)
 
         # Save structured Narrative Report
-        structured_summary = (
-            f"Finding: {'Strong synthetic evidence detected' if global_consensus['verdict'] == 'fake' else 'Audio authenticated as real' if global_consensus['verdict'] == 'real' else 'Inconclusive audio forensic diagnostics'}.\n"
-            f"Evidence:\n"
-            f"- Global Confidence: {global_consensus['confidence'] * 100:.1f}%\n"
-            f"- Convergence Strength: {global_consensus['convergence_strength'] * 100:.1f}%\n"
-            f"- Quality/Reliability Score: {frontend_agents.get('reliability', {}).get('confidence', 1.0) * 100:.1f}%\n"
+        narrative_payload = NarrativeEngine().generate(
+            global_consensus=global_consensus,
+            frontend_agents=frontend_agents,
+            chunk_consensus=chunk_consensus,
+            shap_values=xai_payload["shap_values"],
+            counterfactuals=xai_payload["counterfactuals"],
+            preprocessing=preprocessing,
+            diagnostics=diagnostics,
         )
         narrative = NarrativeReport(
             report_id=report.id,
-            structured_summary=structured_summary,
-            human_summary=f"Deterministic explanation for analysis run {report.id}.",
-            narrative_metadata={"agents_run": list(frontend_agents.keys())},
+            structured_summary=narrative_payload["structured_summary"],
+            human_summary=narrative_payload["human_summary"],
+            narrative_metadata=narrative_payload["narrative_metadata"],
             generated_by="Deterministic Narrative Engine",
             narrative_version="v1"
         )
@@ -456,10 +554,6 @@ async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_
             
         db.commit()
         db.refresh(report)
-
-        preprocessing = _build_preprocessing_summary(streams, len(chunk_consensus))
-        feature_analysis = _build_feature_analysis(agent_results, frontend_agents, chunk_consensus, preprocessing)
-        diagnostics = _build_diagnostics(global_consensus, frontend_agents, chunk_consensus)
         
         final_response = {
             "id": report.id,
@@ -479,6 +573,17 @@ async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_
             "preprocessing": preprocessing,
             "feature_analysis": feature_analysis,
             "diagnostics": diagnostics,
+            "xai": {
+                "shap_values": xai_payload["shap_values"],
+                "counterfactuals": xai_payload["counterfactuals"],
+                "shap_summary": xai_payload["shap_summary"],
+                "counterfactual_summary": xai_payload["counterfactual_summary"],
+            },
+            "narrative": {
+                "structured_summary": narrative_payload["structured_summary"],
+                "human_summary": narrative_payload["human_summary"],
+                "metadata": narrative_payload["narrative_metadata"],
+            },
             "heatmap_base64": heatmap_base64,
             "processing_metadata": {
                 "chunk_duration": 2.0,

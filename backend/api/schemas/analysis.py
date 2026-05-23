@@ -56,6 +56,8 @@ class AnalysisResponse(BaseModel):
     preprocessing: Optional[Dict[str, Any]] = None
     feature_analysis: Optional[Dict[str, Any]] = None
     diagnostics: Optional[Dict[str, Any]] = None
+    xai: Optional[Dict[str, Any]] = None
+    narrative: Optional[Dict[str, Any]] = None
     heatmap_base64: Optional[str] = None
     processing_metadata: Optional[ProcessingMetadataSchema] = None
     created_at: datetime
