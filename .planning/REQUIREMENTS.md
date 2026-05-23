@@ -21,10 +21,10 @@
 
 ### Shapley Coalition & Analytical Counterfactuals
 
-- [ ] **XAI-06**: Compute exact, deterministic Shapley values over calibrated expert support vectors across all $2^4 = 16$ possible agent coalitions per segment chunk.
-- [ ] **XAI-07**: Build Level 1 Analytical Sensitivity engine to compute consensus-to-expert mathematical derivatives, estimating local verdict sensitivity.
+- [x] **XAI-06**: Compute exact, deterministic Shapley values over calibrated expert support vectors across all $2^4 = 16$ possible agent coalitions per segment chunk.
+- [x] **XAI-07**: Build Level 1 Analytical Sensitivity engine to compute consensus-to-expert mathematical derivatives, estimating local verdict sensitivity.
 - [ ] **XAI-08**: Model and generate a 6-layer directed Evidence Graph mapping: Audio Input (L1) -> Preprocessing/Reliability (L2) -> Forensic Agents (L3) -> Consensus Arbitration (L4) -> XAI Artifacts (L5) -> Verdict & Narrative (L6).
-- [ ] **XAI-09**: Implement Layer 1 Deterministic Narrative Engine to generate structured evidence findings, anomaly metrics, and timeline ranges.
+- [x] **XAI-09**: Implement Layer 1 Deterministic Narrative Engine to generate structured evidence findings, anomaly metrics, and timeline ranges.
 - [x] **XAI-10**: Map expert segment contradictions to explicit threat warnings (e.g. voice cloning, localized splices) treated as valuable forensic indicators.
 
 ### Front-End Dashboard Upgrade
@@ -38,8 +38,8 @@
 - [x] **TST-02**: Restructure tests directory folder trees to segregate `unit/`, `integration/`, `consensus/`, `xai/`, `performance/`, `benchmark/`, and `datasets/`.
 - [x] **TST-03**: Develop comprehensive Pytest cases validating Suppression Engine damping behaviors.
 - [x] **TST-04**: Develop comprehensive Pytest cases asserting ConsensusEvent contradiction logic and warning thresholds.
-- [ ] **TST-05**: Develop comprehensive Pytest cases verifying exact Shapley mathematical values.
-- [ ] **TST-06**: Develop comprehensive Pytest cases verifying Counterfactual analytical sensitivity gradients.
+- [x] **TST-05**: Develop comprehensive Pytest cases verifying exact Shapley mathematical values.
+- [x] **TST-06**: Develop comprehensive Pytest cases verifying Counterfactual analytical sensitivity gradients.
 - [x] **TST-07**: Develop robust integration tests verifying temporal segment alignment across resampled streams.
 
 ---
@@ -74,10 +74,10 @@
 | DB-02 | Phase 1 | Complete |
 | DB-03 | Phase 1 | Complete |
 | SUP-02 | Phase 1 | Complete |
-| XAI-06 | Phase 3 | Pending |
-| XAI-07 | Phase 3 | Pending |
+| XAI-06 | Phase 3 | Complete |
+| XAI-07 | Phase 3 | Complete |
 | XAI-08 | Phase 4 | Pending |
-| XAI-09 | Phase 3 | Pending |
+| XAI-09 | Phase 3 | Complete |
 | XAI-10 | Phase 2 | Complete |
 | UI-02 | Phase 5 | Pending |
 | UI-03 | Phase 5 | Pending |
@@ -85,8 +85,8 @@
 | TST-02 | Phase 1 | Complete |
 | TST-03 | Phase 1 | Complete |
 | TST-04 | Phase 2 | Complete |
-| TST-05 | Phase 3 | Pending |
-| TST-06 | Phase 3 | Pending |
+| TST-05 | Phase 3 | Complete |
+| TST-06 | Phase 3 | Complete |
 | TST-07 | Phase 2 | Complete |
 
 **Coverage:**
@@ -96,4 +96,4 @@
 
 ---
 *Requirements defined: 2026-05-23*
-*Last updated: 2026-05-23 after Phase 1/2 reconciliation*
+*Last updated: 2026-05-23 after Phase 3 execution*
