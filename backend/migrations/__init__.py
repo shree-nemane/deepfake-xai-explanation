@@ -1,0 +1,1 @@
+from backend.migrations.migration_runner import run_migrations

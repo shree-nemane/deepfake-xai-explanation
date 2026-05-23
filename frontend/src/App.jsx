@@ -41,7 +41,7 @@ const App = () => {
     formData.append('file', file);
 
     try {
-      const response = await axios.post(`${API_BASE}/analyze`, formData);
+      const response = await axios.post(`${API_BASE}/analyze/`, formData);
       setResult(response.data);
       setActiveTab('dashboard');
     } catch (err) {
@@ -51,16 +51,18 @@ const App = () => {
     }
   };
 
-  const handleViewReport = (report) => {
-    // Map backend Report model to frontend result format
-    const formattedResult = {
-      ...report,
-      xai: report.xai_data,
-      forensic_features: report.evidence || [], // We'd need to fetch evidence separately if not joined
-      timeline_data: report.xai_data.timeline_data || [] // Assuming we save it there
-    };
-    setResult(formattedResult);
-    setActiveTab('dashboard');
+  const handleViewReport = async (report) => {
+    try {
+      setIsAnalyzing(true);
+      const response = await axios.get(`${API_BASE}/analyze/${report.id}`);
+      setResult(response.data);
+      setActiveTab('dashboard');
+    } catch (err) {
+      console.error('Failed to fetch full report details:', err);
+      setError('Could not load full report details.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const resetInvestigation = () => {

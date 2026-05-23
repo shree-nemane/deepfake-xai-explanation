@@ -16,9 +16,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
   return (
     <div className="sidebar">
-      <div className="logo mb-12">
-        <Shield className="text-primary" size={32} />
-        <span className="text-gradient">Forensic AI</span>
+      <div className="logo mb-12 flex items-center gap-3">
+        <Shield className="text-primary" size={28} />
+        <span className="text-gradient font-bold text-xl">Forensic AI</span>
       </div>
 
       <nav className="flex flex-col">
@@ -38,8 +38,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
       <div className="mt-auto">
         <div className="glass p-4 rounded-xl">
-          <p className="text-[10px] text-muted font-bold uppercase mb-1">Engine Status</p>
-          <p className="text-[10px] text-white">ConvNext-Tiny-V1 Active</p>
+          <p className="text-xs text-muted font-bold uppercase mb-1">Engine Status</p>
+          <p className="text-sm text-white">WavLM + ConvNext<br/>Consensus Active</p>
         </div>
       </div>
     </div>

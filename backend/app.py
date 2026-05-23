@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.api.routes import analysis
-from backend.database.session import init_db
+from backend.persistence.database import init_db
 
 app = FastAPI(title="Deepfake Forensic AI — Robustness Upgrade")
 

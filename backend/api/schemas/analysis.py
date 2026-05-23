@@ -2,36 +2,62 @@ from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 
-class EvidenceSchema(BaseModel):
-    feature_name: str
-    value: float
-    anomaly_score: float
+class AgentOutputSchema(BaseModel):
+    name: str
+    verdict: str
+    confidence: float
+    uncertainty: float
+    evidence: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
 
-class XAISchema(BaseModel):
-    gradcam: Optional[str] = None
-    shap: Optional[Dict[str, Any]] = None
-    integrated_gradients: Optional[str] = None
-    counterfactuals: Optional[List[Dict[str, Any]]] = None
+class ConsensusSchema(BaseModel):
+    verdict: str
+    convergence_strength: float
+    confidence: float
+    uncertainty: float
+    fake_probability: Optional[float] = None
+    real_probability: Optional[float] = None
+    probability_margin: Optional[float] = None
+    decision_threshold: Optional[float] = None
+
+class TimelineEventSchema(BaseModel):
+    start_time: float
+    end_time: float
+    event_type: str
+    verdict: str
+    confidence: float
+    convergence_strength: float
+    details: Optional[Dict[str, Any]] = None
+    deep_reasoning: Optional[List[str]] = None
+
+class SampleRatesSchema(BaseModel):
+    semantic: int
+    forensic: int
+
+class ProcessingMetadataSchema(BaseModel):
+    chunk_duration: float
+    overlap: float
+    sample_rates: SampleRatesSchema
+    schema_version: str
+    pipeline_version: str
+
+    class Config:
+        from_attributes = True
 
 class AnalysisResponse(BaseModel):
     id: str
-    prediction: str
-    confidence: float
-    uncertainty: str
-    risk_score: float
-    verdict_reason: str
-    detailed_narrative: Dict[str, str]
-    xai: XAISchema
-    forensic_features: List[EvidenceSchema]
-    timeline_data: Optional[List[Dict[str, float]]] = None
+    filename: str
+    consensus: ConsensusSchema
+    agents: Dict[str, AgentOutputSchema]
+    timeline: List[TimelineEventSchema]
+    preprocessing: Optional[Dict[str, Any]] = None
+    feature_analysis: Optional[Dict[str, Any]] = None
+    diagnostics: Optional[Dict[str, Any]] = None
+    heatmap_base64: Optional[str] = None
+    processing_metadata: Optional[ProcessingMetadataSchema] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
-
-class HealthResponse(BaseModel):
-    status: str
-    message: str

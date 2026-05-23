@@ -32,9 +32,6 @@ const Hero = ({ onStart }) => {
           <button onClick={onStart} className="btn btn-primary px-8 py-3">
             Start Investigation
           </button>
-          <button className="btn btn-ghost px-8 py-3">
-            System Methodology
-          </button>
         </div>
       </motion.div>
 

@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Database
+*.db
+
 # Distribution / packaging
 .Python
 build/
@@ -155,3 +158,10 @@ Thumbs.db
 # Project specific
 uploads/
 *.wav
+
+# GSD / AI Agent directories
+.agent/
+.codex/
+.gemini/
+
+evaluation_results/

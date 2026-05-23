@@ -86,6 +86,12 @@ def generate_spectrogram(y, sr, size=(224, 224)):
     img = (mel_spec_db * 255).astype(np.uint8)
     img = cv2.resize(img, size)
     img_rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    
     tensor = img_rgb.transpose(2, 0, 1) / 255.0
-    return torch.tensor(tensor, dtype=torch.float32).unsqueeze(0)
+    tensor = torch.tensor(tensor, dtype=torch.float32)
+    
+    # Apply ImageNet normalization expected by ConvNext
+    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+    tensor = (tensor - mean) / std
+    
+    return tensor.unsqueeze(0)
