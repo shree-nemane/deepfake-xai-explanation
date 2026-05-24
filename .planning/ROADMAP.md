@@ -55,6 +55,12 @@
 1. React UI features a slide-out Explainability Drawer housing SHAP Recharts bar charts, Counterfactual sliders, and the interactive Plotly Evidence Graph.
 2. React UI includes a Detailed Forensic Explanation Tab presenting structured narratives, z-score tables, and dynamic active contradiction warnings.
 3. End-to-end validation (upload -> progress feedback -> multi-agent run -> dynamic suppression -> consensus persistence -> detailed UI explanation drawer/tabs).
+**Plans:**
+- [ ] 05-01: Explainability Drawer with SHAP, Sensitivity, and Plotly Graph
+  - Wave 1: Drawer shell, SHAP Recharts panel, Level 1 sensitivity controls, Plotly graph, dashboard wiring
+- [ ] 05-02: Detailed Forensic Explanation Tab
+  - Wave 2 *(blocked on Wave 1 completion)*: Dashboard tabs, narrative sections, threat alerts, evidence tables
+**Status:** Planned 2026-05-24
 
 ---
 
