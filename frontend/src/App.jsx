@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import axios from 'axios';
 
@@ -22,6 +22,9 @@ const App = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [showUploader, setShowUploader] = useState(false);
+  const [progress, setProgress] = useState(null);
+  const progressSourceRef = useRef(null);
+  const progressPollRef = useRef(null);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -29,24 +32,120 @@ const App = () => {
       setFile(selectedFile);
       setResult(null);
       setError(null);
+      setProgress(null);
     }
   };
 
+  const clearProgressListeners = () => {
+    if (progressSourceRef.current) {
+      progressSourceRef.current.close();
+      progressSourceRef.current = null;
+    }
+    if (progressPollRef.current) {
+      clearInterval(progressPollRef.current);
+      progressPollRef.current = null;
+    }
+  };
+
+  const fetchJobResult = async (jobId) => {
+    const response = await axios.get(`${API_BASE}/analyze/jobs/${jobId}/result`);
+    return response.data;
+  };
+
+  const waitForJobCompletion = (jobId) => new Promise((resolve, reject) => {
+    let settled = false;
+
+    const rejectOnce = (err) => {
+      if (settled) return;
+      settled = true;
+      clearProgressListeners();
+      reject(err);
+    };
+
+    const finish = async () => {
+      if (settled) return;
+      settled = true;
+      clearProgressListeners();
+      try {
+        resolve(await fetchJobResult(jobId));
+      } catch (err) {
+        reject(err);
+      }
+    };
+
+    const startPolling = () => {
+      if (settled) return;
+      if (progressPollRef.current) return;
+      progressPollRef.current = setInterval(async () => {
+        if (settled) return;
+        try {
+          const response = await axios.get(`${API_BASE}/analyze/jobs/${jobId}/progress`);
+          const snapshot = response.data;
+          setProgress(snapshot);
+          if (snapshot.status === 'complete') {
+            finish();
+          } else if (snapshot.status === 'error') {
+            rejectOnce(new Error(snapshot.error || 'Analysis failed.'));
+          }
+        } catch (err) {
+          rejectOnce(err);
+        }
+      }, 1000);
+    };
+
+    try {
+      const source = new EventSource(`${API_BASE}/analyze/jobs/${jobId}/events`);
+      progressSourceRef.current = source;
+
+      source.onmessage = (event) => {
+        const snapshot = JSON.parse(event.data);
+        setProgress(snapshot);
+        if (snapshot.status === 'complete') {
+          finish();
+        } else if (snapshot.status === 'error') {
+          rejectOnce(new Error(snapshot.error || 'Analysis failed.'));
+        }
+      };
+
+      source.onerror = () => {
+        if (settled) return;
+        if (progressSourceRef.current) {
+          progressSourceRef.current.close();
+          progressSourceRef.current = null;
+        }
+        startPolling();
+      };
+    } catch {
+      startPolling();
+    }
+  });
+
   const analyzeAudio = async () => {
     if (!file) return;
+    clearProgressListeners();
     setIsAnalyzing(true);
     setError(null);
+    setProgress({
+      status: 'queued',
+      stage: 'upload_received',
+      percent: 1,
+      message: 'Uploading evidence.',
+      stages: [],
+    });
 
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const response = await axios.post(`${API_BASE}/analyze/`, formData);
-      setResult(response.data);
+      const jobResponse = await axios.post(`${API_BASE}/analyze/jobs`, formData);
+      setProgress(jobResponse.data);
+      const completedResult = await waitForJobCompletion(jobResponse.data.job_id);
+      setResult(completedResult);
       setActiveTab('dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Analysis failed. Please check if the backend is running.');
+      setError(err.response?.data?.detail || err.message || 'Analysis failed. Please check if the backend is running.');
     } finally {
+      clearProgressListeners();
       setIsAnalyzing(false);
     }
   };
@@ -54,6 +153,7 @@ const App = () => {
   const handleViewReport = async (report) => {
     try {
       setIsAnalyzing(true);
+      setProgress(null);
       const response = await axios.get(`${API_BASE}/analyze/${report.id}`);
       setResult(response.data);
       setActiveTab('dashboard');
@@ -68,6 +168,8 @@ const App = () => {
   const resetInvestigation = () => {
     setResult(null);
     setFile(null);
+    setProgress(null);
+    clearProgressListeners();
     setShowUploader(true);
     setActiveTab('investigate');
   };
@@ -100,6 +202,7 @@ const App = () => {
                     onFileChange={handleFileChange} 
                     onAnalyze={analyzeAudio}
                     isAnalyzing={isAnalyzing}
+                    progress={progress}
                     error={error}
                   />
                 )}

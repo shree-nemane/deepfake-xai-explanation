@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Music, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, Upload, Music, AlertCircle } from 'lucide-react';
 
-const Uploader = ({ file, onFileChange, onAnalyze, isAnalyzing, error }) => {
+const Uploader = ({ file, onFileChange, onAnalyze, isAnalyzing, progress, error }) => {
+  const stageRows = progress?.stages?.length ? progress.stages : [];
+  const progressPercent = Math.max(0, Math.min(Number(progress?.percent) || 0, 100));
+
   return (
     <div className="flex flex-col items-center justify-center py-12">
       <motion.div 
@@ -48,20 +51,44 @@ const Uploader = ({ file, onFileChange, onAnalyze, isAnalyzing, error }) => {
         </div>
 
         {isAnalyzing && (
-          <div className="mt-12 text-center">
-            <div className="flex justify-center mb-6">
-              <div className="pulse-dot w-12 h-12 bg-primary"></div>
+          <div className="analysis-progress-panel mt-12">
+            <div className="analysis-progress-header">
+              <div className="flex justify-center">
+                <div className="pulse-dot w-12 h-12 bg-primary"></div>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">{progress?.message || 'Starting forensic analysis'}</h3>
+                <p className="text-muted">
+                  {progress?.status === 'queued' ? 'Waiting for the backend analysis job to start.' : 'Receiving live pipeline stage updates from the backend.'}
+                </p>
+              </div>
             </div>
-            <h3 className="text-xl font-bold mb-2">Analyzing Forensic Markers</h3>
-            <p className="text-muted">Extracting features, calculating anomaly scores, and generating XAI maps...</p>
             
             <div className="w-full bg-white/5 h-1 rounded-full mt-8 overflow-hidden">
               <motion.div 
                 className="bg-primary h-full"
-                animate={{ width: ['0%', '30%', '60%', '90%', '95%'] }}
-                transition={{ duration: 10, ease: "easeInOut" }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
               />
             </div>
+            <div className="analysis-progress-percent">{Math.round(progressPercent)}%</div>
+
+            {stageRows.length > 0 && (
+              <div className="analysis-stage-list">
+                {stageRows.map((stage) => (
+                  <div key={stage.id} className={`analysis-stage-row stage-${stage.status}`}>
+                    {stage.status === 'complete' ? (
+                      <CheckCircle2 size={16} />
+                    ) : stage.status === 'running' || stage.status === 'queued' ? (
+                      <Loader2 size={16} className="stage-spin" />
+                    ) : (
+                      <Circle size={16} />
+                    )}
+                    <span>{stage.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

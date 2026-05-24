@@ -1,6 +1,56 @@
 import React from 'react';
 
-const EvidenceGraph = ({ agents, consensus, diagnostics }) => {
+const EvidenceGraph = ({ evidenceGraph, agents, consensus, diagnostics }) => {
+  if (evidenceGraph?.nodes?.length) {
+    const layers = evidenceGraph.layers || [];
+    const layerCounts = evidenceGraph.summary?.layer_counts || {};
+    const warningNodes = evidenceGraph.nodes.filter((node) => node.type === 'threat_warning');
+
+    return (
+      <div className="evidence-graph">
+        <h3>Evidence Relationship Map</h3>
+        <div className="graph-summary">
+          <div>
+            <span>Schema</span>
+            <strong>{evidenceGraph.schema_version || 'graph_v1'}</strong>
+          </div>
+          <div>
+            <span>Nodes</span>
+            <strong>{evidenceGraph.summary?.node_count ?? evidenceGraph.nodes.length}</strong>
+          </div>
+          <div>
+            <span>Edges</span>
+            <strong>{evidenceGraph.summary?.edge_count ?? evidenceGraph.edges?.length ?? 0}</strong>
+          </div>
+        </div>
+
+        <div className="evidence-layer-list">
+          {layers.map((layer) => (
+            <div key={layer.id} className="evidence-layer-row">
+              <span>L{layer.id}</span>
+              <strong>{layer.name}</strong>
+              <em>{layerCounts[layer.id] ?? layerCounts[String(layer.id)] ?? 0} node(s)</em>
+            </div>
+          ))}
+        </div>
+
+        <div className="node-list">
+          {evidenceGraph.nodes.slice(0, 10).map((node) => (
+            <span key={node.id} className={`graph-node node-${node.status || node.type}`}>
+              L{node.layer}: {node.label}
+            </span>
+          ))}
+        </div>
+
+        {warningNodes.length > 0 && (
+          <div className="graph-warning-strip">
+            {warningNodes.length} threat warning node(s) linked into the evidence graph.
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const agentEntries = Object.entries(agents || {});
   const votingEntries = agentEntries.filter(([name]) => name !== 'reliability');
   const voteCounts = votingEntries.reduce(

@@ -62,6 +62,7 @@ const Dashboard = ({ result, onReset }) => {
         {/* Evidence Graph */}
         <div className="span-8">
           <EvidenceGraph
+            evidenceGraph={result.xai?.evidence_graph}
             agents={result.agents}
             consensus={result.consensus}
             diagnostics={result.diagnostics}

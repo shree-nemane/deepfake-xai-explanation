@@ -1733,6 +1733,105 @@ h4 {
 }
 
 /* Scrollbar Customization */
+.analysis-progress-panel {
+  background: rgba(15, 23, 42, 0.58);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.analysis-progress-header {
+  align-items: center;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 64px 1fr;
+}
+
+.analysis-progress-percent {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  text-align: right;
+}
+
+.analysis-stage-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.analysis-stage-row {
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  color: var(--muted);
+  display: grid;
+  font-size: 0.85rem;
+  gap: 0.75rem;
+  grid-template-columns: 18px 1fr;
+  min-height: 38px;
+  padding: 0.55rem 0.7rem;
+}
+
+.analysis-stage-row.stage-complete {
+  color: var(--success);
+}
+
+.analysis-stage-row.stage-running,
+.analysis-stage-row.stage-queued {
+  border-color: rgba(99, 102, 241, 0.35);
+  color: var(--text);
+}
+
+.analysis-stage-row.stage-error {
+  border-color: rgba(239, 68, 68, 0.45);
+  color: var(--error);
+}
+
+.stage-spin {
+  animation: stage-spin 1s linear infinite;
+}
+
+@keyframes stage-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.evidence-layer-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.evidence-layer-row {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 42px 1fr auto;
+  padding: 0.55rem 0.7rem;
+}
+
+.evidence-layer-row span {
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.evidence-layer-row strong {
+  font-size: 0.85rem;
+}
+
+.evidence-layer-row em {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-style: normal;
+}
+
 ::-webkit-scrollbar {
   width: 5px;
 }

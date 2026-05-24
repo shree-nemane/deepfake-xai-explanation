@@ -1,6 +1,11 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from collections import Counter, defaultdict
+from datetime import datetime, timezone
+import asyncio
+import json
+import threading
 import uuid
 import os
 import shutil
@@ -8,16 +13,126 @@ import cv2
 import base64
 import numpy as np
 
-from backend.persistence.database import get_db, Report, AgentOutput, EvidenceSegment, ConsensusEvent, XAIArtifact, ConsensusEventType, NarrativeReport, EventAgentDetails, ProcessingMetadata
+from backend.persistence.database import get_db, SessionLocal, Report, AgentOutput, EvidenceSegment, ConsensusEvent, XAIArtifact, ConsensusEventType, NarrativeReport, EventAgentDetails, ProcessingMetadata
 from backend.api.schemas.analysis import AnalysisResponse
 from backend.preprocessing.audio_processor import AudioProcessor
 from backend.orchestration.forensic_orchestrator import AnalysisUnavailableError, ForensicOrchestrator
 from backend.explainability.counterfactuals.counterfactual_engine import CounterfactualEngine
+from backend.explainability.evidence_graph import generate_evidence_graph
 from backend.explainability.narrative_engine import NarrativeEngine
 from backend.explainability.shap.shap_engine import SHAPEngine
 from enum import Enum as PyEnum
 
 router = APIRouter(prefix="/analyze", tags=["analysis"])
+
+
+ANALYSIS_STAGES = [
+    {"id": "upload_received", "label": "Upload received", "percent": 5},
+    {"id": "preprocessing", "label": "Normalizing and isolating speech", "percent": 18},
+    {"id": "segmentation", "label": "Segmenting aligned streams", "percent": 30},
+    {"id": "agent_panel", "label": "Running forensic agent panel", "percent": 48},
+    {"id": "consensus", "label": "Calibrating consensus", "percent": 66},
+    {"id": "xai_evidence_graph", "label": "Building XAI and evidence graph", "percent": 82},
+    {"id": "narrative_persistence", "label": "Writing narrative and report", "percent": 94},
+    {"id": "complete", "label": "Analysis complete", "percent": 100},
+]
+STAGE_INDEX = {stage["id"]: index for index, stage in enumerate(ANALYSIS_STAGES)}
+
+
+class AnalysisJobStore:
+    """Thread-safe in-memory progress store for local analysis jobs."""
+
+    def __init__(self):
+        self._jobs = {}
+        self._lock = threading.Lock()
+
+    def create(self, job_id, filename):
+        now = datetime.now(timezone.utc).isoformat()
+        job = {
+            "job_id": job_id,
+            "filename": filename,
+            "stage": "upload_received",
+            "status": "queued",
+            "percent": 5,
+            "message": "Upload received.",
+            "error": None,
+            "result": None,
+            "created_at": now,
+            "updated_at": now,
+            "sequence": 0,
+        }
+        with self._lock:
+            self._jobs[job_id] = job
+        return self.snapshot(job_id)
+
+    def update(self, job_id, stage, status="running", percent=None, message=None, error=None, result=None):
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return None
+            stage_defaults = next((item for item in ANALYSIS_STAGES if item["id"] == stage), None)
+            job["stage"] = stage
+            job["status"] = status
+            job["percent"] = percent if percent is not None else (stage_defaults or {}).get("percent", job["percent"])
+            job["message"] = message if message is not None else (stage_defaults or {}).get("label", stage)
+            job["error"] = error
+            if result is not None:
+                job["result"] = result
+            job["updated_at"] = datetime.now(timezone.utc).isoformat()
+            job["sequence"] += 1
+            return self._snapshot_unlocked(job)
+
+    def snapshot(self, job_id, include_result=False):
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return None
+            return self._snapshot_unlocked(job, include_result=include_result)
+
+    def result(self, job_id):
+        with self._lock:
+            job = self._jobs.get(job_id)
+            return None if job is None else job.get("result")
+
+    def _snapshot_unlocked(self, job, include_result=False):
+        active_index = STAGE_INDEX.get(job["stage"], 0)
+        stages = []
+        for index, stage in enumerate(ANALYSIS_STAGES):
+            if job["status"] == "error" and index == active_index:
+                status = "error"
+            elif index < active_index or job["stage"] == "complete":
+                status = "complete"
+            elif index == active_index:
+                status = job["status"]
+            else:
+                status = "pending"
+            stages.append({**stage, "status": status})
+
+        snapshot = {
+            key: job[key]
+            for key in (
+                "job_id",
+                "filename",
+                "stage",
+                "status",
+                "percent",
+                "message",
+                "error",
+                "created_at",
+                "updated_at",
+                "sequence",
+            )
+        }
+        snapshot["stages"] = stages
+        if include_result:
+            snapshot["result"] = job.get("result")
+        return snapshot
+
+
+analysis_jobs = AnalysisJobStore()
+_orchestrator = None
+_audio_processor = None
+_runtime_lock = threading.Lock()
 
 
 def _safe_float(value, default=0.0):
@@ -27,6 +142,29 @@ def _safe_float(value, default=0.0):
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _get_orchestrator():
+    global _orchestrator
+    if _orchestrator is None:
+        with _runtime_lock:
+            if _orchestrator is None:
+                _orchestrator = ForensicOrchestrator()
+    return _orchestrator
+
+
+def _get_audio_processor():
+    global _audio_processor
+    if _audio_processor is None:
+        with _runtime_lock:
+            if _audio_processor is None:
+                _audio_processor = AudioProcessor()
+    return _audio_processor
+
+
+def _emit_progress(progress_callback, stage, status="running", message=None, percent=None):
+    if progress_callback:
+        progress_callback(stage=stage, status=status, message=message, percent=percent)
 
 
 def _severity(score):
@@ -327,40 +465,32 @@ async def get_report(report_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Report not found")
     return report.full_response
 
-orchestrator = ForensicOrchestrator()
-audio_processor = AudioProcessor()
-
 UPLOADS_DIR = "uploads"
 if not os.path.exists(UPLOADS_DIR):
     os.makedirs(UPLOADS_DIR)
 
-@router.post("/", response_model=AnalysisResponse)
-async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.lower().endswith(('.wav', '.mp3')):
-        raise HTTPException(status_code=400, detail="Invalid file type.")
 
-    file_id = str(uuid.uuid4())
-    ext = os.path.splitext(file.filename)[1]
-    temp_path = os.path.join(UPLOADS_DIR, f"{file_id}{ext}")
-
+def _run_analysis_from_path(temp_path, filename, db, report_id=None, progress_callback=None):
+    file_id = report_id or str(uuid.uuid4())
     try:
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
         # 1. Preprocess (Dual-Stream)
-        streams = audio_processor.process_dual_stream(temp_path)
+        _emit_progress(progress_callback, "preprocessing", message="Normalizing audio and isolating speech.")
+        streams = _get_audio_processor().process_dual_stream(temp_path)
         audio_16k = streams["16k"]
         audio_48k = streams["48k"]
         
         # 2. Orchestrate Agents
-        results = orchestrator.analyze_audio(audio_16k, audio_48k)
+        _emit_progress(progress_callback, "segmentation", message="Preparing overlapping temporal chunks.")
+        _emit_progress(progress_callback, "agent_panel", message="Running neural and acoustic forensic agents.")
+        results = _get_orchestrator().analyze_audio(audio_16k, audio_48k)
         
         agent_results = results["agent_results"]
         chunk_consensus = results["chunk_consensus"]
         global_consensus = results["global_consensus"]
+        _emit_progress(progress_callback, "consensus", message="Calibrating multi-agent consensus.")
         
         # 3. Create Report in Database
-        report = Report(id=file_id, filename=file.filename)
+        report = Report(id=file_id, filename=filename)
         db.add(report)
         db.flush()
         
@@ -508,18 +638,8 @@ async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_
         preprocessing = _build_preprocessing_summary(streams, len(chunk_consensus))
         feature_analysis = _build_feature_analysis(agent_results, frontend_agents, chunk_consensus, preprocessing)
         diagnostics = _build_diagnostics(global_consensus, frontend_agents, chunk_consensus)
+        _emit_progress(progress_callback, "xai_evidence_graph", message="Computing XAI payloads and evidence graph.")
         xai_payload = _build_xai_payload(chunk_consensus)
-
-        # Save rich XAI Artifact details
-        xai_art = XAIArtifact(
-            report_id=report.id,
-            shap_values=xai_payload["shap_values"],
-            counterfactuals=xai_payload["counterfactuals"],
-            shap_summary=xai_payload["shap_summary"],
-            counterfactual_summary=xai_payload["counterfactual_summary"],
-            xai_version="v1"
-        )
-        db.add(xai_art)
 
         # Save structured Narrative Report
         narrative_payload = NarrativeEngine().generate(
@@ -531,6 +651,30 @@ async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_
             preprocessing=preprocessing,
             diagnostics=diagnostics,
         )
+        evidence_graph = generate_evidence_graph(
+            filename=filename,
+            preprocessing=preprocessing,
+            frontend_agents=frontend_agents,
+            chunk_consensus=chunk_consensus,
+            global_consensus=global_consensus,
+            xai_payload=xai_payload,
+            narrative_payload=narrative_payload,
+            diagnostics=diagnostics,
+        )
+
+        # Save rich XAI Artifact details
+        xai_art = XAIArtifact(
+            report_id=report.id,
+            shap_values=xai_payload["shap_values"],
+            counterfactuals=xai_payload["counterfactuals"],
+            evidence_graph=evidence_graph,
+            shap_summary=xai_payload["shap_summary"],
+            counterfactual_summary=xai_payload["counterfactual_summary"],
+            xai_version="v1"
+        )
+        db.add(xai_art)
+
+        _emit_progress(progress_callback, "narrative_persistence", message="Persisting report artifacts.")
         narrative = NarrativeReport(
             report_id=report.id,
             structured_summary=narrative_payload["structured_summary"],
@@ -576,6 +720,7 @@ async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_
             "xai": {
                 "shap_values": xai_payload["shap_values"],
                 "counterfactuals": xai_payload["counterfactuals"],
+                "evidence_graph": evidence_graph,
                 "shap_summary": xai_payload["shap_summary"],
                 "counterfactual_summary": xai_payload["counterfactual_summary"],
             },
@@ -601,14 +746,143 @@ async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_
         report.full_response = final_response
         db.commit()
         
+        _emit_progress(progress_callback, "complete", status="complete", message="Analysis complete.", percent=100)
         return final_response
 
     except AnalysisUnavailableError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()
+        raise
+
+
+@router.post("/", response_model=AnalysisResponse)
+async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    if not file.filename.lower().endswith(('.wav', '.mp3')):
+        raise HTTPException(status_code=400, detail="Invalid file type.")
+
+    file_id = str(uuid.uuid4())
+    ext = os.path.splitext(file.filename)[1]
+    temp_path = os.path.join(UPLOADS_DIR, f"{file_id}{ext}")
+
+    try:
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return _run_analysis_from_path(temp_path, file.filename, db, report_id=file_id)
+    except AnalysisUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+def _job_progress_callback(job_id):
+    def callback(stage, status="running", message=None, percent=None):
+        analysis_jobs.update(job_id, stage, status=status, message=message, percent=percent)
+
+    return callback
+
+
+def _run_analysis_job(job_id, temp_path, filename):
+    db = SessionLocal()
+    try:
+        result = _run_analysis_from_path(
+            temp_path,
+            filename,
+            db,
+            report_id=job_id,
+            progress_callback=_job_progress_callback(job_id),
+        )
+        analysis_jobs.update(
+            job_id,
+            "complete",
+            status="complete",
+            message="Analysis complete.",
+            percent=100,
+            result=result,
+        )
+    except AnalysisUnavailableError as exc:
+        analysis_jobs.update(
+            job_id,
+            "agent_panel",
+            status="error",
+            message="Analysis unavailable.",
+            error=str(exc),
+        )
+    except Exception as exc:
+        analysis_jobs.update(
+            job_id,
+            "complete",
+            status="error",
+            message="Analysis failed.",
+            error=str(exc),
+        )
+    finally:
+        db.close()
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+@router.post("/jobs")
+async def create_analysis_job(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(('.wav', '.mp3')):
+        raise HTTPException(status_code=400, detail="Invalid file type.")
+
+    job_id = str(uuid.uuid4())
+    ext = os.path.splitext(file.filename)[1]
+    temp_path = os.path.join(UPLOADS_DIR, f"{job_id}{ext}")
+
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    snapshot = analysis_jobs.create(job_id, file.filename)
+    background_tasks.add_task(_run_analysis_job, job_id, temp_path, file.filename)
+    return snapshot
+
+
+@router.get("/jobs/{job_id}/progress")
+async def get_analysis_job_progress(job_id: str):
+    snapshot = analysis_jobs.snapshot(job_id)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="Analysis job not found")
+    return snapshot
+
+
+@router.get("/jobs/{job_id}/result", response_model=AnalysisResponse)
+async def get_analysis_job_result(job_id: str):
+    snapshot = analysis_jobs.snapshot(job_id, include_result=True)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="Analysis job not found")
+    if snapshot["status"] == "error":
+        raise HTTPException(status_code=500, detail=snapshot["error"] or "Analysis failed")
+    if snapshot["status"] != "complete" or snapshot.get("result") is None:
+        raise HTTPException(status_code=202, detail="Analysis is still running")
+    return snapshot["result"]
+
+
+@router.get("/jobs/{job_id}/events")
+async def stream_analysis_job_events(job_id: str):
+    if analysis_jobs.snapshot(job_id) is None:
+        raise HTTPException(status_code=404, detail="Analysis job not found")
+
+    async def event_stream():
+        last_sequence = None
+        while True:
+            snapshot = analysis_jobs.snapshot(job_id)
+            if snapshot is None:
+                yield "event: error\ndata: {\"error\":\"Analysis job not found\"}\n\n"
+                break
+
+            if snapshot["sequence"] != last_sequence:
+                last_sequence = snapshot["sequence"]
+                yield f"data: {json.dumps(snapshot)}\n\n"
+
+            if snapshot["status"] in {"complete", "error"}:
+                break
+
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")

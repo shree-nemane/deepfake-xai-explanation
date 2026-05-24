@@ -9,6 +9,7 @@ import traceback
 import numpy as np
 
 from backend.agents.convnext_agent import ConvNextAgent
+from backend.api.routes.analysis import AnalysisJobStore
 from backend.api.schemas.analysis import AnalysisResponse
 from backend.consensus.consensus_engine import ConsensusEngine
 from backend.orchestration.agent_registry import agent_registry
@@ -52,6 +53,13 @@ def test_current_schema_accepts_inconclusive():
         xai={
             "shap_values": {"method": "exact_consensus_shap", "chunks": []},
             "counterfactuals": {"method": "analytical_level_1", "chunks": []},
+            "evidence_graph": {
+                "schema_version": "evidence_graph_v1",
+                "layers": [{"id": 1, "name": "Audio Input"}],
+                "nodes": [],
+                "edges": [],
+                "summary": {"node_count": 0, "edge_count": 0},
+            },
             "shap_summary": "No Shapley values available.",
             "counterfactual_summary": "No counterfactuals available.",
         },
@@ -65,7 +73,22 @@ def test_current_schema_accepts_inconclusive():
     )
     assert response.consensus.verdict == "inconclusive"
     assert response.xai["shap_values"]["method"] == "exact_consensus_shap"
+    assert response.xai["evidence_graph"]["schema_version"] == "evidence_graph_v1"
     assert response.narrative["metadata"]["narrative_version"] == "deterministic_v1"
+
+
+def test_analysis_job_store_progress_transitions():
+    store = AnalysisJobStore()
+    created = store.create("job-1", "sample.wav")
+    running = store.update("job-1", "agent_panel", message="Running agents.")
+    completed = store.update("job-1", "complete", status="complete", result={"id": "job-1"})
+
+    assert created["status"] == "queued"
+    assert running["stage"] == "agent_panel"
+    assert running["percent"] == 48
+    assert completed["status"] == "complete"
+    assert completed["stages"][-1]["status"] == "complete"
+    assert store.snapshot("job-1", include_result=True)["result"]["id"] == "job-1"
 
 
 def test_consensus_fail_closed():
