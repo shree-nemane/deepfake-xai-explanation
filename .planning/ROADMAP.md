@@ -43,6 +43,9 @@
 1. Backend compiles a 6-layer directed Evidence Graph representation for each run.
 2. React uploader displays real-time multi-stage progress indicators (`Normalizing...`, `Segmenting...`, `Running Agent Panel...`, etc.) on the dashboard card.
 3. High-fidelity progress updates synchronize cleanly with backend pre-processing states.
+**Plans:**
+- [ ] 04-01: Evidence Graph and Real-Time Progress
+  - Wave 1: Backend graph generation, progress endpoints, uploader progress UI, and verification
 
 ### Phase 5: Explanations Console, SHAP & Plotly Graph Drawer
 **Goal:** Build the expandable Explainability Drawer and Detailed Forensic Explanation Tab on the React dashboard.
