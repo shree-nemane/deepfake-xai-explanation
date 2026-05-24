@@ -40,14 +40,12 @@ Move beyond opaque, black-box deepfake classifiers by delivering transparent, mu
 - ✓ **TST-06**: XAI tests validate analytical counterfactual gradient signs, hand-calculated values, and zero-support behavior. — *Phase 3*
 - ✓ **TST-07**: Temporal alignment tests validate masked padding, stream alignment, truncation safety, and boundary tolerance. — *Phase 2*
 - ✓ **UI-04**: Uploader analysis progress is driven by backend job progress endpoints/SSE with polling fallback and stage-level status rendering. — *Phase 4*
+- ✓ **UI-02**: Create an expandable **Explainability Drawer** on the React Dashboard housing SHAP horizontal bar charts, Counterfactual sensitivity controls, and the Plotly-based Evidence Graph. — *Phase 5*
+- ✓ **UI-03**: Build a **Detailed Forensic Explanation Tab** to render human-readable narratives, contradiction warnings, and tabular evidence breakdowns. — *Phase 5*
 
 ### Active
 
-*The following active requirements define the scope of the current upgrade milestone (v1 Release):*
-
-**Hybrid UI & Real-Time Feedback:**
-- [ ] **UI-02**: Create an expandable **Explainability Drawer** on the React Dashboard housing SHAP horizontal bar charts, Counterfactual sensitivity controls, and the Plotly-based Evidence Graph.
-- [ ] **UI-03**: Build a **Detailed Forensic Explanation Tab** to render human-readable narratives, contradiction warnings, and tabular evidence breakdowns.
+*No active v1 requirements remain — milestone scope complete pending `/gsd-complete-milestone`.*
 
 ### Out of Scope
 
@@ -58,7 +56,7 @@ Move beyond opaque, black-box deepfake classifiers by delivering transparent, mu
 
 ## Context
 
-The system represents an upgrade of a local digital audio forensics project. The baseline has successfully laid out preprocessing and basic agent registrations. The current codebase has consolidated active persistence, added reliability-aware consensus suppression, implemented contradiction warnings, added exact Shapley attributions, Level 1 analytical counterfactual sensitivity, deterministic narrative generation, directed evidence graph data, and backend-driven live progress feedback. The remaining v1 gaps are the upgraded explanation drawer and detailed explanation tab.
+The system represents an upgrade of a local digital audio forensics project. The baseline has successfully laid out preprocessing and basic agent registrations. The current codebase has consolidated active persistence, added reliability-aware consensus suppression, implemented contradiction warnings, added exact Shapley attributions, Level 1 analytical counterfactual sensitivity, deterministic narrative generation, directed evidence graph data, backend-driven live progress feedback, and the Phase 5 explainability drawer plus detailed forensic explanation tab. The v1 milestone UI scope is complete.
 
 ## Constraints
 
@@ -96,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-24 after Phase 4 execution*
+*Last updated: 2026-05-24 after Phase 5 execution*
