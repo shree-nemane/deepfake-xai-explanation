@@ -31,6 +31,7 @@ Move beyond opaque, black-box deepfake classifiers by delivering transparent, mu
 - ✓ **XAI-10**: Consensus contradictions map to explicit voice clone, localized splice, and partial synthesis threat warnings with persisted diagnostic metadata. — *Phase 2*
 - ✓ **XAI-06**: Exact deterministic Shapley values are computed over calibrated WavLM, ConvNext, AASIST, and Acoustic support vectors across all coalitions per chunk. — *Phase 3*
 - ✓ **XAI-07**: Level 1 analytical consensus sensitivity gradients expose local verdict sensitivity for each voting forensic agent. — *Phase 3*
+- ✓ **XAI-08**: A deterministic 6-layer directed JSON Evidence Graph connects Audio Input, Preprocessing/Reliability, Forensic Agents, Consensus Arbitration, XAI Artifacts, and Verdict & Narrative. — *Phase 4*
 - ✓ **XAI-09**: Deterministic narrative summaries generate structured Finding, Evidence, Reliability, Confidence, Contradictions, and Explainability sections from observed artifacts only. — *Phase 3*
 - ✓ **TST-02**: Test folders are organized under `tests/unit/`, `tests/integration/`, `tests/consensus/`, `tests/xai/`, `tests/performance/`, `tests/benchmark/`, and `tests/datasets/`. — *Phase 1*
 - ✓ **TST-03**: Consensus tests validate reliability suppression math, agent-specific damping, schema persistence, and fail-closed behavior. — *Phase 1*
@@ -38,18 +39,15 @@ Move beyond opaque, black-box deepfake classifiers by delivering transparent, mu
 - ✓ **TST-05**: XAI tests validate exact Shapley efficiency, symmetry, dummy behavior, and neutral fallback cases. — *Phase 3*
 - ✓ **TST-06**: XAI tests validate analytical counterfactual gradient signs, hand-calculated values, and zero-support behavior. — *Phase 3*
 - ✓ **TST-07**: Temporal alignment tests validate masked padding, stream alignment, truncation safety, and boundary tolerance. — *Phase 2*
+- ✓ **UI-04**: Uploader analysis progress is driven by backend job progress endpoints/SSE with polling fallback and stage-level status rendering. — *Phase 4*
 
 ### Active
 
 *The following active requirements define the scope of the current upgrade milestone (v1 Release):*
 
-**Evidence Graph XAI:**
-- [ ] **XAI-08**: Develop a 6-layer directed Evidence Graph mapping data flow: Audio Input (L1) -> Preprocessing/Reliability (L2) -> Forensic Agents (L3) -> Consensus Arbitration (L4) -> XAI Artifacts (L5) -> Verdict & Narrative (L6).
-
 **Hybrid UI & Real-Time Feedback:**
 - [ ] **UI-02**: Create an expandable **Explainability Drawer** on the React Dashboard housing SHAP horizontal bar charts, Counterfactual sensitivity controls, and the Plotly-based Evidence Graph.
 - [ ] **UI-03**: Build a **Detailed Forensic Explanation Tab** to render human-readable narratives, contradiction warnings, and tabular evidence breakdowns.
-- [ ] **UI-04**: Implement a real-time **Multi-Stage Progress Indicator** on the uploader card displaying current active steps during the analysis pipeline.
 
 ### Out of Scope
 
@@ -60,7 +58,7 @@ Move beyond opaque, black-box deepfake classifiers by delivering transparent, mu
 
 ## Context
 
-The system represents an upgrade of a local digital audio forensics project. The baseline has successfully laid out preprocessing and basic agent registrations. The current codebase has consolidated active persistence, added reliability-aware consensus suppression, implemented contradiction warnings, and added exact Shapley attributions, Level 1 analytical counterfactual sensitivity, and deterministic narrative generation. The remaining v1 gaps are evidence graph generation, live multi-stage progress feedback, and the upgraded investigation UI.
+The system represents an upgrade of a local digital audio forensics project. The baseline has successfully laid out preprocessing and basic agent registrations. The current codebase has consolidated active persistence, added reliability-aware consensus suppression, implemented contradiction warnings, added exact Shapley attributions, Level 1 analytical counterfactual sensitivity, deterministic narrative generation, directed evidence graph data, and backend-driven live progress feedback. The remaining v1 gaps are the upgraded explanation drawer and detailed explanation tab.
 
 ## Constraints
 
@@ -77,6 +75,8 @@ The system represents an upgrade of a local digital audio forensics project. The
 | **Exact Shapley Values** | Small coalition footprint ($N=4$, 16 states) allows exact, deterministic calculations without Monte Carlo variance. | ✓ Approved |
 | **Consolidated Database** | Completely purge legacy schemas and tables to prevent future architectural drift. | ✓ Approved |
 | **Hybrid UI Layout** | Deliver a clean dashboard along with an expandable explainability drawer and a detailed explanation tab for multi-tiered analysis. | ✓ Approved |
+| **Backend Progress Stream** | Use backend analysis job progress endpoints/SSE as the source of truth for uploader progress instead of simulated client animation. | ✓ Approved |
+| **Phase 4 UI Boundary** | Stop Phase 4 at graph data plus progress UI; defer the explainability drawer and detailed explanation tab to Phase 5. | ✓ Approved |
 
 ## Evolution
 
@@ -96,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-23 after Phase 3 execution*
+*Last updated: 2026-05-24 after Phase 4 execution*

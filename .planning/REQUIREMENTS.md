@@ -23,7 +23,7 @@
 
 - [x] **XAI-06**: Compute exact, deterministic Shapley values over calibrated expert support vectors across all $2^4 = 16$ possible agent coalitions per segment chunk.
 - [x] **XAI-07**: Build Level 1 Analytical Sensitivity engine to compute consensus-to-expert mathematical derivatives, estimating local verdict sensitivity.
-- [ ] **XAI-08**: Model and generate a 6-layer directed Evidence Graph mapping: Audio Input (L1) -> Preprocessing/Reliability (L2) -> Forensic Agents (L3) -> Consensus Arbitration (L4) -> XAI Artifacts (L5) -> Verdict & Narrative (L6).
+- [x] **XAI-08**: Model and generate a 6-layer directed Evidence Graph mapping: Audio Input (L1) -> Preprocessing/Reliability (L2) -> Forensic Agents (L3) -> Consensus Arbitration (L4) -> XAI Artifacts (L5) -> Verdict & Narrative (L6).
 - [x] **XAI-09**: Implement Layer 1 Deterministic Narrative Engine to generate structured evidence findings, anomaly metrics, and timeline ranges.
 - [x] **XAI-10**: Map expert segment contradictions to explicit threat warnings (e.g. voice cloning, localized splices) treated as valuable forensic indicators.
 
@@ -31,7 +31,7 @@
 
 - [ ] **UI-02**: Implement an expandable **Explainability Drawer** on the React Dashboard showing SHAP contribution bar charts, Counterfactual sensitivity sliders, and the interactive Plotly Evidence Graph.
 - [ ] **UI-03**: Build a **Detailed Forensic Explanation Tab** to render human-readable structured narratives, active contradiction alerts, and detailed evidence grids.
-- [ ] **UI-04**: Build a real-time **Multi-Stage Progress Indicator** on the uploader card displaying active pipeline stages.
+- [x] **UI-04**: Build a real-time **Multi-Stage Progress Indicator** on the uploader card displaying active pipeline stages.
 
 ### Multi-Tiered Testing Harness
 
@@ -76,12 +76,12 @@
 | SUP-02 | Phase 1 | Complete |
 | XAI-06 | Phase 3 | Complete |
 | XAI-07 | Phase 3 | Complete |
-| XAI-08 | Phase 4 | Pending |
+| XAI-08 | Phase 4 | Complete |
 | XAI-09 | Phase 3 | Complete |
 | XAI-10 | Phase 2 | Complete |
 | UI-02 | Phase 5 | Pending |
 | UI-03 | Phase 5 | Pending |
-| UI-04 | Phase 4 | Pending |
+| UI-04 | Phase 4 | Complete |
 | TST-02 | Phase 1 | Complete |
 | TST-03 | Phase 1 | Complete |
 | TST-04 | Phase 2 | Complete |
@@ -96,4 +96,4 @@
 
 ---
 *Requirements defined: 2026-05-23*
-*Last updated: 2026-05-23 after Phase 3 execution*
+*Last updated: 2026-05-24 after Phase 4 execution*

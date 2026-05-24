@@ -44,8 +44,9 @@
 2. React uploader displays real-time multi-stage progress indicators (`Normalizing...`, `Segmenting...`, `Running Agent Panel...`, etc.) on the dashboard card.
 3. High-fidelity progress updates synchronize cleanly with backend pre-processing states.
 **Plans:**
-- [ ] 04-01: Evidence Graph and Real-Time Progress
+- [x] 04-01: Evidence Graph and Real-Time Progress
   - Wave 1: Backend graph generation, progress endpoints, uploader progress UI, and verification
+**Status:** Completed 2026-05-24
 
 ### Phase 5: Explanations Console, SHAP & Plotly Graph Drawer
 **Goal:** Build the expandable Explainability Drawer and Detailed Forensic Explanation Tab on the React dashboard.
@@ -66,4 +67,4 @@
 - **Phase 5**: `UI-02`, `UI-03`
 
 *Requirements Coverage: 17/17 (100% mapped) ✓*
-*Last updated: 2026-05-23 after Phase 3 execution*
+*Last updated: 2026-05-24 after Phase 4 execution*
