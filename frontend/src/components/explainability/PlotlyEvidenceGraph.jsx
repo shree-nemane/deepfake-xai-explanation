@@ -8,9 +8,10 @@ const buildLayout = (positions) => {
   const pad = 0.8;
 
   return {
-    autosize: true,
-    height: 360,
-    margin: { l: 40, r: 24, t: 24, b: 40 },
+    autosize: false,
+    width: 440,
+    height: 300,
+    margin: { l: 48, r: 16, t: 16, b: 40 },
     paper_bgcolor: 'rgba(15, 23, 42, 0)',
     plot_bgcolor: 'rgba(15, 23, 42, 0)',
     font: { color: '#94a3b8', family: 'Outfit, sans-serif', size: 11 },
@@ -19,6 +20,7 @@ const buildLayout = (positions) => {
       zeroline: false,
       showticklabels: false,
       range: [Math.min(...xs, 0) - pad, Math.max(...xs, 1) + pad],
+      fixedrange: true,
     },
     yaxis: {
       showgrid: true,
@@ -28,9 +30,15 @@ const buildLayout = (positions) => {
       tickvals: [1, 2, 3, 4, 5, 6],
       ticktext: ['L1 Input', 'L2 Prep', 'L3 Agents', 'L4 Consensus', 'L5 XAI', 'L6 Verdict'],
       range: [0.4, 6.6],
+      fixedrange: true,
     },
     showlegend: false,
     hovermode: 'closest',
+    hoverlabel: {
+      bgcolor: '#1e293b',
+      bordercolor: 'rgba(255,255,255,0.15)',
+      font: { color: '#f1f5f9', size: 11 },
+    },
   };
 };
 
@@ -51,11 +59,11 @@ const PlotlyEvidenceGraph = ({ evidenceGraph }) => {
     });
 
     const positions = {};
-    Object.entries(layerBuckets).forEach(([layer, layerNodes]) => {
+    Object.entries(layerBuckets).forEach(([, layerNodes]) => {
       const count = layerNodes.length;
       layerNodes.forEach((node, index) => {
         const x = count === 1 ? 0 : index - (count - 1) / 2;
-        positions[node.id] = { x, y: Number(layer), label: node.label, type: node.type };
+        positions[node.id] = { x, y: Number(node.layer), label: node.label, type: node.type };
       });
     });
 
@@ -68,7 +76,7 @@ const PlotlyEvidenceGraph = ({ evidenceGraph }) => {
       textposition: 'top center',
       textfont: { size: 9, color: '#e2e8f0' },
       marker: {
-        size: 14,
+        size: 12,
         color: nodes.map((n) => {
           if (n.type === 'threat_warning') return '#f43f5e';
           if (n.layer >= 5) return '#8b5cf6';
@@ -77,7 +85,7 @@ const PlotlyEvidenceGraph = ({ evidenceGraph }) => {
         }),
         line: { color: 'rgba(255,255,255,0.2)', width: 1 },
       },
-      hovertemplate: '%{text}<br>type: %{customdata}<extra></extra>',
+      hovertemplate: '%{text}<br>%{customdata}<extra></extra>',
       customdata: nodes.map((n) => n.type),
     };
 
@@ -123,9 +131,13 @@ const PlotlyEvidenceGraph = ({ evidenceGraph }) => {
           <Plot
             data={data}
             layout={layout}
-            config={{ displayModeBar: false, responsive: true }}
-            style={{ width: '100%', minHeight: '320px' }}
-            useResizeHandler
+            config={{
+              displayModeBar: false,
+              responsive: false,
+              scrollZoom: false,
+              doubleClick: false,
+            }}
+            style={{ width: '100%', height: '300px' }}
           />
         </Suspense>
       </div>

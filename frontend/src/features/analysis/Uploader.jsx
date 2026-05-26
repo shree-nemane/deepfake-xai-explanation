@@ -51,16 +51,21 @@ const Uploader = ({ file, onFileChange, onAnalyze, isAnalyzing, progress, error 
         </div>
 
         {isAnalyzing && (
-          <div className="analysis-progress-panel mt-12">
+          <div className="analysis-progress-panel mt-12" aria-busy="true" aria-live="polite">
             <div className="analysis-progress-header">
               <div className="flex justify-center">
-                <div className="pulse-dot w-12 h-12 bg-primary"></div>
+                <div className="pulse-dot w-12 h-12 bg-primary" aria-hidden />
               </div>
               <div>
                 <h3 className="text-xl font-bold mb-2">{progress?.message || 'Starting forensic analysis'}</h3>
                 <p className="text-muted">
-                  {progress?.status === 'queued' ? 'Waiting for the backend analysis job to start.' : 'Receiving live pipeline stage updates from the backend.'}
+                  {progress?.status === 'queued'
+                    ? 'Waiting for the backend analysis job to start.'
+                    : 'Receiving live pipeline stage updates from the backend.'}
                 </p>
+                {!progress?.stages?.length && (
+                  <p className="analysis-stage-placeholder">Pipeline stages will appear as the backend emits progress…</p>
+                )}
               </div>
             </div>
             
@@ -73,9 +78,9 @@ const Uploader = ({ file, onFileChange, onAnalyze, isAnalyzing, progress, error 
             </div>
             <div className="analysis-progress-percent">{Math.round(progressPercent)}%</div>
 
-            {stageRows.length > 0 && (
-              <div className="analysis-stage-list">
-                {stageRows.map((stage) => (
+            <div className="analysis-stage-list">
+              {stageRows.length > 0 ? (
+                stageRows.map((stage) => (
                   <div key={stage.id} className={`analysis-stage-row stage-${stage.status}`}>
                     {stage.status === 'complete' ? (
                       <CheckCircle2 size={16} />
@@ -86,9 +91,14 @@ const Uploader = ({ file, onFileChange, onAnalyze, isAnalyzing, progress, error 
                     )}
                     <span>{stage.label}</span>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              ) : (
+                <div className="analysis-stage-row stage-pending">
+                  <Loader2 size={16} className="stage-spin" />
+                  <span>Connecting to analysis stream…</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

@@ -1296,35 +1296,403 @@ h4 {
   padding: 2.5rem 0 1rem;
 }
 
+.timeline-ruler {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-bottom: 0.35rem;
+}
+
 .timeline-track {
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  height: 0.5rem;
+  border-radius: 8px;
+  height: 2rem;
   position: relative;
+  margin-top: 0.5rem;
 }
 
-.timeline-marker {
-  background: var(--success);
-  border: 2px solid var(--bg);
-  border-radius: 999px;
-  height: 1.2rem;
+.timeline-segment {
   position: absolute;
-  top: -0.35rem;
-  width: 1.2rem;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  min-width: 4px;
+  border: none;
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(16, 185, 129, 0.55);
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
 }
 
-.timeline-marker.alert-fake {
-  background: var(--error);
+.timeline-segment-contradiction {
+  background: rgba(245, 158, 11, 0.65);
 }
 
-.event-label {
-  color: var(--text-muted);
-  font-size: 0.7rem;
+.timeline-segment-splice {
+  background: rgba(244, 63, 94, 0.55);
+}
+
+.timeline-segment-inconclusive {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.timeline-segment.alert-fake {
+  box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.8);
+}
+
+.timeline-segment-selected {
+  box-shadow: 0 0 0 2px var(--primary-light);
+  filter: brightness(1.15);
+  z-index: 2;
+}
+
+.timeline-segment-tooltip {
+  position: absolute;
   left: 50%;
-  position: absolute;
-  top: 1.35rem;
+  bottom: calc(100% + 8px);
   transform: translateX(-50%);
+  background: #0f172a;
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--text);
   white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.timeline-segment:hover .timeline-segment-tooltip,
+.timeline-segment:focus-visible .timeline-segment-tooltip {
+  opacity: 1;
+}
+
+.timeline-selection-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+}
+
+.timeline-empty {
+  color: var(--text-dim);
+  padding: 1rem 0;
+}
+
+.timeline-compression-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.timeline-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.timeline-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.timeline-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legend-contradiction .timeline-legend-swatch {
+  background: rgba(245, 158, 11, 0.85);
+}
+
+.legend-splice .timeline-legend-swatch {
+  background: rgba(244, 63, 94, 0.75);
+}
+
+.legend-inconclusive .timeline-legend-swatch {
+  background: rgba(148, 163, 184, 0.65);
+}
+
+.legend-stable .timeline-legend-swatch {
+  background: rgba(16, 185, 129, 0.75);
+}
+
+/* Chunk evidence explorer */
+.chunk-evidence-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chunk-evidence-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+
+.chunk-inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .chunk-inspector-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chunk-suspicion-card h4,
+.chunk-mel-panel h4,
+.chunk-agent-snapshot h4 {
+  font-size: 0.85rem;
+  color: var(--primary-light);
+  margin-bottom: 0.5rem;
+}
+
+.chunk-suspicion-card.severity-high {
+  border-left: 3px solid var(--error);
+}
+
+.chunk-suspicion-card.severity-medium {
+  border-left: 3px solid var(--warning);
+}
+
+.chunk-suspicion-headline {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.chunk-suspicion-list {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding-left: 1.1rem;
+  line-height: 1.5;
+}
+
+.chunk-mel-image {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-top: 0.5rem;
+}
+
+.chunk-mel-empty {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  padding: 1rem;
+}
+
+.chunk-agent-table {
+  width: 100%;
+  font-size: 0.8rem;
+  border-collapse: collapse;
+}
+
+.chunk-agent-table th,
+.chunk-agent-table td {
+  text-align: left;
+  padding: 0.4rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Heatmap */
+.heatmap-panel {
+  margin-top: 0.5rem;
+}
+
+.heatmap-viewport {
+  position: relative;
+  overflow: visible;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.45);
+  min-height: 16rem;
+}
+
+.heatmap-drag-layer {
+  position: relative;
+  width: 100%;
+  min-height: 16rem;
+}
+
+.heatmap-image {
+  width: 100%;
+  height: 16rem;
+  object-fit: contain;
+  opacity: 0.88;
+  display: block;
+}
+
+.heatmap-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.heatmap-band-contradiction {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.heatmap-band-splice {
+  background: rgba(244, 63, 94, 0.28);
+}
+
+.heatmap-band-inconclusive {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.heatmap-band-active,
+.heatmap-band:hover,
+.heatmap-band:focus-visible {
+  background: rgba(99, 102, 241, 0.35);
+  outline: none;
+}
+
+.heatmap-active-callout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  font-size: 0.82rem;
+}
+
+.heatmap-active-callout strong {
+  color: var(--primary-light);
+}
+
+.heatmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.heatmap-legend-hint {
+  margin-left: auto;
+  color: var(--text-dim);
+}
+
+.heatmap-tool-btn {
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.heatmap-tool-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Report export */
+.report-export-panel {
+  padding: 1.25rem;
+}
+
+.report-export-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.report-export-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.report-export-preview {
+  max-height: 200px;
+  overflow: auto;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.75rem;
+  border-radius: 10px;
+  white-space: pre-wrap;
+}
+
+.analysis-stage-placeholder {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.ui-error-fallback {
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.ui-error-fallback h2 {
+  margin-bottom: 0.75rem;
+}
+
+.ui-error-detail {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--error);
+  text-align: left;
+  max-height: 120px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.75rem;
+  border-radius: 8px;
 }
 
 .feature-analysis-panel {
@@ -1846,12 +2214,27 @@ h4 {
 }
 
 /* Phase 5 — Explainability drawer & forensic explanation tab */
+body.drawer-open {
+  overflow: hidden;
+}
+
+.drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.drawer-root .drawer-backdrop,
+.drawer-root .explainability-drawer {
+  pointer-events: auto;
+}
+
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 90;
-  background: rgba(2, 6, 23, 0.65);
-  border: none;
+  z-index: 201;
+  background: rgba(2, 6, 23, 0.55);
   cursor: pointer;
 }
 
@@ -1859,7 +2242,7 @@ h4 {
   position: fixed;
   top: 0;
   right: 0;
-  z-index: 100;
+  z-index: 202;
   width: min(520px, 92vw);
   height: 100vh;
   display: flex;
@@ -2000,10 +2383,32 @@ h4 {
 }
 
 .plotly-graph-wrap {
-  min-height: 320px;
+  position: relative;
+  height: 300px;
+  max-height: 300px;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.6);
+  contain: layout paint;
+}
+
+.plotly-graph-wrap .js-plotly-plot,
+.plotly-graph-wrap .plot-container.plotly {
+  position: relative !important;
+  width: 100% !important;
+  height: 300px !important;
+}
+
+.plotly-graph-wrap .svg-container {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.plotly-graph-wrap .main-svg {
+  position: absolute !important;
 }
 
 .dashboard-view-tabs {

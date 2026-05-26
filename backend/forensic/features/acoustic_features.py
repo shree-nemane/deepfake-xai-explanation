@@ -1,6 +1,8 @@
+import base64
 import numpy as np
 import librosa
 import torch
+import cv2
 
 def extract_all_features(y, sr):
     """
@@ -68,6 +70,27 @@ def extract_all_features(y, sr):
     features["hnr"] = float(10 * np.log10(harm_power / (perc_power + 1e-8))) if perc_power > 0 else 0.0
 
     return features
+
+def mel_spectrogram_preview_base64(y, sr, width=320, height=160):
+    """PNG preview of mel spectrogram for UI (viridis colormap)."""
+    if y is None or len(y) < max(int(sr * 0.08), 1):
+        return None
+    try:
+        mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=64, fmax=8000)
+        mel_db = librosa.power_to_db(mel, ref=np.max)
+        denom = mel_db.max() - mel_db.min()
+        if denom > 0:
+            mel_db = (mel_db - mel_db.min()) / denom
+        else:
+            mel_db = np.zeros_like(mel_db)
+        img = (mel_db * 255).astype(np.uint8)
+        img = cv2.resize(img, (width, height), interpolation=cv2.INTER_AREA)
+        colored = cv2.applyColorMap(img, cv2.COLORMAP_VIRIDIS)
+        _, buffer = cv2.imencode(".png", colored)
+        return base64.b64encode(buffer).decode("utf-8")
+    except Exception:
+        return None
+
 
 def generate_spectrogram(y, sr, size=(224, 224)):
     """Convert raw audio to model input tensor."""

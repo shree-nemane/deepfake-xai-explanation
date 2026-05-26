@@ -166,3 +166,6 @@ uploads/
 .cursor/
 
 evaluation_results/
+
+# Generated documentation artifacts (regenerate via scripts/extract_report_sample.py)
+docs/sample_report_redacted.json

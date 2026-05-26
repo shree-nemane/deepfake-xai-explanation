@@ -1,5 +1,6 @@
 import React from 'react';
 import { Activity, AlertTriangle, BarChart2, Brain, Gauge } from 'lucide-react';
+import { collectDiagnosticWarnings, warningKey } from '../../utils/diagnostics';
 
 const formatPercent = (value) => `${Math.round((Number(value) || 0) * 100)}%`;
 
@@ -45,7 +46,7 @@ const FeatureAnalysisPanel = ({ featureAnalysis, preprocessing, diagnostics }) =
   const quality = featureAnalysis.signal_quality || {};
   const acousticFeatures = featureAnalysis.acoustic_features || [];
   const neuralSignals = featureAnalysis.neural_signals || [];
-  const warnings = diagnostics?.warnings || [];
+  const warnings = collectDiagnosticWarnings(diagnostics);
 
   return (
     <section className="feature-analysis-panel">
@@ -130,8 +131,8 @@ const FeatureAnalysisPanel = ({ featureAnalysis, preprocessing, diagnostics }) =
           </div>
           {warnings.length ? (
             <ul className="warning-list">
-              {warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
+              {warnings.map((warning, index) => (
+                <li key={warningKey(warning, index)}>{warning}</li>
               ))}
             </ul>
           ) : (

@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ZoomIn, ZoomOut, Maximize, ScanSearch } from 'lucide-react';
+import { getEventMeta, formatTimeRange } from '../../utils/forensicLabels';
 
-const TemporalHeatmap = ({ base64Image, timeline }) => {
+const TemporalHeatmap = ({ base64Image, timeline, selectedChunk, onSelectChunk }) => {
   const [scale, setScale] = useState(1);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   const containerRef = useRef(null);
 
   if (!base64Image) return null;
@@ -12,82 +14,94 @@ const TemporalHeatmap = ({ base64Image, timeline }) => {
   const handleZoomOut = () => setScale((s) => Math.max(s - 0.5, 1));
   const handleReset = () => setScale(1);
 
-  const anomalySpots = timeline ? timeline.filter((t) => t.event_type !== 'NORMAL') : [];
-  const totalDuration = timeline?.length
-    ? Math.max(...timeline.map((t) => t.end_time || 0), 1)
+  const segments = timeline || [];
+  const totalDuration = segments.length
+    ? Math.max(...segments.map((t) => t.end_time || 0), 1)
     : 100;
 
+  const activeSpot = hoveredIndex != null ? segments[hoveredIndex] : selectedChunk;
+
   return (
-    <div className="glass p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+    <div className="glass p-6 heatmap-panel">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary">
           <ScanSearch size={18} /> Interactive Spectral Heatmap
         </h3>
         <div className="flex gap-2">
-          <button onClick={handleZoomOut} className="p-2 hover:bg-white/5 rounded text-muted hover:text-white transition-colors"><ZoomOut size={16} /></button>
-          <button onClick={handleReset} className="p-2 hover:bg-white/5 rounded text-muted hover:text-white transition-colors"><Maximize size={16} /></button>
-          <button onClick={handleZoomIn} className="p-2 hover:bg-white/5 rounded text-muted hover:text-white transition-colors"><ZoomIn size={16} /></button>
+          <button type="button" onClick={handleZoomOut} className="heatmap-tool-btn" aria-label="Zoom out">
+            <ZoomOut size={16} />
+          </button>
+          <button type="button" onClick={handleReset} className="heatmap-tool-btn" aria-label="Reset zoom">
+            <Maximize size={16} />
+          </button>
+          <button type="button" onClick={handleZoomIn} className="heatmap-tool-btn" aria-label="Zoom in">
+            <ZoomIn size={16} />
+          </button>
         </div>
       </div>
 
-      <div
-        className="relative flex-grow overflow-hidden rounded-xl border border-white/10 bg-black/50 cursor-grab active:cursor-grabbing h-64"
-        ref={containerRef}
-      >
+      {activeSpot && (
+        <div className="heatmap-active-callout" role="status">
+          <strong>{getEventMeta(activeSpot.event_type).label}</strong>
+          <span>
+            {formatTimeRange(activeSpot.start_time, activeSpot.end_time)} · {activeSpot.verdict} ·{' '}
+            {Math.round((activeSpot.confidence || 0) * 100)}%
+          </span>
+        </div>
+      )}
+
+      <div className="heatmap-viewport" ref={containerRef}>
         <motion.div
           drag
           dragConstraints={containerRef}
-          className="absolute inset-0 w-full h-full"
+          className="heatmap-drag-layer"
           animate={{ scale }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
           <img
             src={`data:image/jpeg;base64,${base64Image}`}
-            alt="Temporal Heatmap"
-            className="w-full h-full object-fill opacity-80"
+            alt="Grad-CAM spectral heatmap"
+            className="heatmap-image"
             draggable="false"
           />
 
-          {anomalySpots.map((spot, i) => {
+          {segments.map((spot, i) => {
             const start = spot.start_time || 0;
             const end = spot.end_time || start;
             const leftPercent = (start / totalDuration) * 100;
-            const widthPercent = Math.max(((end - start) / totalDuration) * 100, 1);
-            const isContradiction = spot.event_type?.toLowerCase() === 'contradiction';
+            const widthPercent = Math.max(((end - start) / totalDuration) * 100, 0.8);
+            const typeKey = getEventMeta(spot.event_type).key;
+            const isActive =
+              selectedChunk &&
+              selectedChunk.start_time === spot.start_time &&
+              selectedChunk.end_time === spot.end_time;
 
             return (
-              <div
-                key={i}
-                className={`absolute top-0 bottom-0 border-x border-white/20 hover:bg-white/10 transition-colors group z-10 ${
-                  isContradiction ? 'bg-warning/20' : 'bg-error/30'
-                }`}
-                style={{
-                  left: `${leftPercent}%`,
-                  width: `${widthPercent}%`,
-                }}
-              >
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/90 border border-white/10 px-3 py-2 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl">
-                  <div className="font-bold mb-1 text-white">{start}s - {end}s</div>
-                  <div className={`capitalize ${isContradiction ? 'text-warning' : 'text-error'}`}>
-                    {spot.verdict} at {Math.round((spot.confidence || 0) * 100)}%
-                  </div>
-                </div>
-              </div>
+              <button
+                key={`${start}-${end}-${i}`}
+                type="button"
+                className={`heatmap-band heatmap-band-${typeKey} ${isActive ? 'heatmap-band-active' : ''}`}
+                style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onFocus={() => setHoveredIndex(i)}
+                onBlur={() => setHoveredIndex(null)}
+                onClick={() => onSelectChunk?.(spot)}
+                aria-label={`${getEventMeta(spot.event_type).label} ${formatTimeRange(start, end)}`}
+              />
             );
           })}
         </motion.div>
       </div>
 
-      <div className="mt-4 flex gap-4 text-xs text-muted justify-center">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-error/40 border border-error"></div> Anomaly Detected
+      <div className="heatmap-legend mt-4">
+        <div className="timeline-legend-item legend-splice">
+          <span className="timeline-legend-swatch" /> Splice / anomaly band
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-warning/40 border border-warning"></div> Contradiction
+        <div className="timeline-legend-item legend-contradiction">
+          <span className="timeline-legend-swatch" /> Contradiction band
         </div>
-        <div className="flex items-center gap-2 text-gray-500">
-          <Maximize size={12} /> Drag to pan, use buttons to zoom
-        </div>
+        <span className="heatmap-legend-hint">Hover or click bands · drag image to pan</span>
       </div>
     </div>
   );

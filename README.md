@@ -13,23 +13,9 @@ Multi-agent temporal consensus, reliability-aware suppression, exact Shapley att
 3. **Runs five forensic agents** per chunk (ConvNext, WavLM, AASIST, Acoustic, Reliability)
 4. **Suppresses** low-trust evidence dynamically (fail-closed below reliability 0.20)
 5. **Reasons** over agreement and contradictions (voice clone, splice, partial synthesis)
-6. **Generates XAI** — exact SHAP, Level 1 counterfactual sensitivity, 6-layer evidence graph
+6. **Generates explainability** — exact SHAP, Level 1 counterfactual sensitivity, 6-layer evidence graph
 7. **Writes** deterministic narrative reports and persists everything to SQLite
 8. **Presents** results in a React investigation dashboard with live progress, explainability drawer, and forensic explanation tab
-
----
-
-## v1 milestone status
-
-| Phase | Deliverable | Status |
-|-------|-------------|--------|
-| 1 | DB consolidation, suppression engine, test layout | Complete |
-| 2 | Contradiction warnings, temporal alignment | Complete |
-| 3 | Exact SHAP, analytical counterfactuals, narrative engine | Complete |
-| 4 | Evidence graph data + backend-driven upload progress | Complete |
-| 5 | Explainability drawer + forensic explanation tab | Complete |
-
-All 17 mapped v1 requirements are implemented. See `DFXAI_project_spec.md` for the full product specification.
 
 ---
 
@@ -42,7 +28,7 @@ Upload (React)
         → 2s overlapping chunks
         → Forensic agents (ConvNext, WavLM, AASIST, Acoustic, Reliability)
         → Reliability suppression + consensus engine
-        → XAI (SHAP, counterfactuals, evidence graph, narrative)
+        → Explainability (SHAP, counterfactuals, evidence graph, narrative)
         → SQLite persistence
     → Dashboard + Explainability drawer + Explanation tab
 ```
@@ -57,12 +43,12 @@ Upload (React)
 | **Acoustic** | Biological plausibility (jitter, shimmer, MFCC z-scores) |
 | **Reliability** | SNR, clipping, quality — drives suppression |
 
-### Explainability (v1)
+### Explainability
 
 - **Exact Shapley values** over 4 voting agents (16 coalitions, no Monte Carlo)
 - **Level 1 analytical sensitivity** — gradient-based counterfactual statements
 - **6-layer evidence graph** — JSON persisted and visualized in Plotly
-- **Deterministic narrative** — six structured sections (no LLM in v1)
+- **Deterministic narrative** — six structured sections (rule-based, reproducible)
 
 ---
 
@@ -73,7 +59,7 @@ Upload (React)
 | Backend | Python 3.10+, FastAPI, SQLAlchemy, SQLite, PyTorch, Librosa |
 | Frontend | React 19, Vite, Recharts, Plotly (lazy-loaded), Framer Motion |
 | ML | ConvNext, WavLM (lazy via ModelHub), Silero VAD |
-| Tests | pytest (unit, integration, consensus, xai) |
+| Tests | pytest (unit, integration, consensus, explainability) |
 
 ---
 
@@ -89,22 +75,21 @@ deepfake-xai/
 │   ├── explainability/           # SHAP, counterfactuals, graph, narrative
 │   ├── orchestration/            # Chunk loop, agent registry
 │   ├── preprocessing/            # Dual-stream audio processor
-│   ├── persistence/              # SQLAlchemy models + DB
-│   └── migrations/               # Schema validation
+│   └── persistence/              # SQLAlchemy models + DB
 ├── frontend/
 │   └── src/
-│       ├── App.jsx                 # Upload, progress SSE, routing
-│       ├── features/analysis/      # Dashboard, uploader, charts
+│       ├── App.jsx               # Upload, progress SSE, routing
+│       ├── features/analysis/    # Dashboard, uploader
 │       └── components/
-│           ├── forensic/           # Overview panels
-│           └── explainability/     # Drawer + explanation tab (Phase 5)
-├── tests/
-│   ├── unit/ integration/ consensus/ xai/ performance/ benchmark/
+│           ├── forensic/         # Overview panels, chunk inspector
+│           └── explainability/   # Drawer + explanation tab
+├── tests/                        # pytest suites
+├── scripts/
+│   ├── run-dev.ps1               # Start API + UI (Windows)
+│   └── verify.py                 # Quick API smoke test
 ├── docs/
-│   └── API_REFERENCE.md          # Full HTTP API documentation
-├── DFXAI_project_spec.md         # Master PRD + system design
-├── DFXAI_agent_prompt.md         # Implementation agent reference
-└── .planning/                    # GSD planning (development branch only)
+│   └── API_REFERENCE.md          # HTTP API documentation
+└── DFXAI_project_spec.md         # Product specification
 ```
 
 ---
@@ -117,29 +102,24 @@ deepfake-xai/
 - Node.js 18+
 - ~4 GB RAM for neural models (CPU works; GPU optional)
 
-### 1. Backend
+### Option A — helper script (Windows)
 
 ```powershell
-# From project root
+.\scripts\run-dev.ps1
+```
+
+### Option B — manual
+
+**Backend** (project root):
+
+```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r backend/requirements.txt
 python -m backend.app
 ```
 
-API: `http://localhost:8000`  
-OpenAPI: `http://localhost:8000/docs`
-
-**Verify the forensic API** (not another app on port 8000):
-
-```powershell
-curl http://localhost:8000/
-# Expected: {"status":"online","message":"Deepfake Forensic AI API is operational."}
-```
-
-If you see a Django page or connection errors, stop other servers on port 8000 and run `python -m backend.app` again. The React dev server must use `http://localhost:5173` so CORS matches `backend/app.py`.
-
-### 2. Frontend
+**Frontend**:
 
 ```powershell
 cd frontend
@@ -147,14 +127,29 @@ npm install
 npm run dev
 ```
 
-UI: `http://localhost:5173`
+| Service | URL |
+|---------|-----|
+| API | http://localhost:8000 |
+| OpenAPI | http://localhost:8000/docs |
+| UI | http://localhost:5173 |
 
-### 3. Analyze audio
+### Verify the forensic API
+
+Port **8000** must serve this project, not another app (e.g. Django):
+
+```powershell
+curl http://localhost:8000/
+# {"status":"online","message":"Deepfake Forensic AI API is operational."}
+```
+
+If upload fails with a network/CORS error, stop other servers on port 8000 and restart `python -m backend.app`. The UI must run on `http://localhost:5173` (matches CORS in `backend/app.py`).
+
+### Analyze audio
 
 1. Open the UI → **Forensic Investigation**
 2. Upload `.wav` or `.mp3`
 3. Watch backend-driven progress stages
-4. Review dashboard → **Open Explainability** drawer or **Forensic Explanation** tab
+4. Review the dashboard — timeline chunk inspector, explainability drawer, forensic explanation tab
 
 ---
 
@@ -163,21 +158,22 @@ UI: `http://localhost:5173`
 ```powershell
 .venv\Scripts\Activate.ps1
 
-# Core regression suite (recommended)
-python -m pytest tests\xai tests\consensus tests\integration\test_validation.py -q
+# Recommended regression
+python -m pytest tests\xai tests\consensus tests\forensic tests\integration\test_validation.py -q
 
-# Full suite (includes skipped performance/benchmark tests)
+# Full suite
 python -m pytest tests -q
 
 # Schema validation
 python -m backend.migrations.validate_schema
 
+# API smoke test (requires sample wav in repo root)
+python scripts\verify.py
+
 # Frontend production build
 cd frontend
 npm run build
 ```
-
-**Last verified:** 61 passed, 4 skipped (performance/benchmark), frontend build OK.
 
 ---
 
@@ -194,41 +190,26 @@ npm run build
 | GET | `/analyze/history` | Recent reports |
 | GET | `/analyze/{report_id}` | Load saved report |
 
-Full request/response schemas: **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)**
+Full schemas: **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)**
 
 ---
 
 ## Frontend features
 
-### Investigation dashboard (Overview tab)
-
-- Verdict banner with confidence and convergence
-- Consensus panel and agent cards
-- Evidence graph summary (Phase 4)
-- Feature analysis, reliability, timeline, Grad-CAM heatmap
-
-### Explainability drawer (UI-02)
-
-- SHAP contribution bar chart (Recharts)
-- Level 1 analytical sensitivity controls per chunk
-- Interactive Plotly evidence graph
-
-### Forensic Explanation tab (UI-03)
-
-- Six narrative sections (Finding → Explainability)
-- Contradiction / threat alerts with time ranges
-- Acoustic z-score and per-chunk agent evidence tables
+- **Overview** — verdict banner, consensus, agents, feature analysis, chunk timeline inspector (mel spectrogram + suspicion card), heatmap, report export
+- **Explainability drawer** — SHAP chart, sensitivity controls, Plotly evidence graph (lazy-loaded)
+- **Forensic explanation tab** — narrative sections, contradiction alerts, evidence tables
 
 ---
 
-## Configuration & data
+## Configuration
 
 | Item | Location | Notes |
 |------|----------|-------|
 | SQLite DB | `forensic_intelligence.db` | Created on first run |
 | Upload temp | `uploads/` | Gitignored |
-| CORS | `backend/app.py` | `allow_origins=["*"]` — local only |
-| Job store | In-memory | Resets on server restart |
+| CORS | `backend/app.py` | `localhost:5173` / `127.0.0.1:5173` |
+| Job progress | In-memory | Resets on server restart |
 
 ---
 
@@ -236,10 +217,22 @@ Full request/response schemas: **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)*
 
 | Branch | Purpose |
 |--------|---------|
-| **`development`** | Active work; includes `.planning/` for GSD continuity |
-| **`main`** | Clean production branch — application code + docs only, **no** `.planning/` or agent metadata |
+| **`development`** | Active development |
+| **`main`** | Production-facing branch — application code and docs only |
 
-Develop on `development`. Release to `main` without planning artifacts.
+Develop on `development`. Release to `main` without internal planning artifacts.
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|----------------|-----|
+| Blank / blue screen after analysis | React render error (e.g. malformed diagnostics) | Pull latest; hard-refresh browser; check browser console |
+| CORS or network error on upload | Wrong process on port 8000 | `curl http://localhost:8000/` must return forensic API JSON |
+| Explainability drawer dims screen | Plotly load failure | Close drawer (Esc); use Overview evidence graph; check console |
+| No mel spectrogram in history | Report saved before mel feature | Re-run analysis on current build |
+| Slow first drawer open | Large Plotly bundle | Expected once per session; graph loads after drawer opens |
 
 ---
 
@@ -247,42 +240,23 @@ Develop on `development`. Release to `main` without planning artifacts.
 
 - Sequential chunk processing (no multithreaded agents yet)
 - In-memory job progress (not durable across restarts)
-- AASIST is deterministic heuristics, not full neural deployment
-- No Level 2 perturbation counterfactuals or LLM narrative (v2)
-- ESLint config has pre-existing JSX `no-unused-vars` noise; production build passes
-- Plotly bundle is large (~4.6 MB) — lazy-loaded but first drawer open may be slow
+- AASIST uses deterministic heuristics, not full neural deployment
+- No Level 2 perturbation counterfactuals
+- Plotly bundle is large (~4.6 MB) — lazy-loaded
 
 ---
 
-## Documentation index
+## Documentation
 
 | Document | Description |
 |----------|-------------|
 | [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | HTTP API, schemas, examples |
-| [DFXAI_project_spec.md](DFXAI_project_spec.md) | Master PRD + system design |
-| [DFXAI_agent_prompt.md](DFXAI_agent_prompt.md) | Agent implementation rules |
-| `http://localhost:8000/docs` | Live OpenAPI (when backend running) |
-
----
-
-## GSD development
-
-This project is managed with [GSD](https://github.com/anthropics/get-shit-done) on the `development` branch.
-
-```powershell
-# Resume / check progress
-/gsd-progress
-/gsd-progress --next
-
-# Local venv + SDK
-.venv\Scripts\Activate.ps1
-C:\Users\rahul\AppData\Roaming\npm\gsd-sdk.cmd query init.progress
-```
-
-Planning state lives in `.planning/` (development only).
+| [RESEARCH_AND_REPORT_DOC.md](RESEARCH_AND_REPORT_DOC.md) | Paper, blackbook, and architecture source material |
+| [DFXAI_project_spec.md](DFXAI_project_spec.md) | Product specification and system design |
+| http://localhost:8000/docs | Live OpenAPI when backend is running |
 
 ---
 
 ## License
 
-Research and educational use. See project evaluators / academic context in `DFXAI_project_spec.md`.
+Research and educational use. See `DFXAI_project_spec.md` for academic context.

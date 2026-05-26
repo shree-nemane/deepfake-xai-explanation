@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, ShieldAlert, Activity, ArrowRight, Brain } from 'lucide-react';
 import AgentCard from '../../components/forensic/AgentCard';
-import TimelinePanel from '../../components/forensic/TimelinePanel';
 import ConsensusPanel from '../../components/forensic/ConsensusPanel';
-import TemporalHeatmap from '../../components/forensic/TemporalHeatmap';
+import ChunkEvidenceExplorer from '../../components/forensic/ChunkEvidenceExplorer';
+import ReportSummaryExport from '../../components/forensic/ReportSummaryExport';
 import EvidenceGraph from '../../components/forensic/EvidenceGraph';
 import FeatureAnalysisPanel from '../../components/forensic/FeatureAnalysisPanel';
 import ReliabilityPanel from '../../components/forensic/ReliabilityPanel';
@@ -55,14 +55,12 @@ const DashboardOverview = ({ result }) => (
     </div>
 
     <div className="span-12">
-      <TimelinePanel timeline={result.timeline} />
+      <ChunkEvidenceExplorer result={result} />
     </div>
 
-    {result.heatmap_base64 && (
-      <div className="span-12">
-        <TemporalHeatmap base64Image={result.heatmap_base64} timeline={result.timeline} />
-      </div>
-    )}
+    <div className="span-12">
+      <ReportSummaryExport result={result} />
+    </div>
   </div>
 );
 

@@ -12,6 +12,8 @@ import Uploader from './features/analysis/Uploader';
 import Dashboard from './features/analysis/Dashboard';
 import History from './features/history/History';
 import Analytics from './features/analysis/Analytics';
+import ErrorBoundary from './components/layout/ErrorBoundary';
+import { mergeMelPreviews, normalizeReport } from './utils/normalizeReport';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -140,7 +142,8 @@ const App = () => {
       const jobResponse = await axios.post(`${API_BASE}/analyze/jobs`, formData);
       setProgress(jobResponse.data);
       const completedResult = await waitForJobCompletion(jobResponse.data.job_id);
-      setResult(completedResult);
+      const normalized = normalizeReport(completedResult);
+      setResult(mergeMelPreviews(normalized, completedResult));
       setActiveTab('dashboard');
     } catch (err) {
       setError(err.response?.data?.detail || err.message || 'Analysis failed. Please check if the backend is running.');
@@ -155,7 +158,7 @@ const App = () => {
       setIsAnalyzing(true);
       setProgress(null);
       const response = await axios.get(`${API_BASE}/analyze/${report.id}`);
-      setResult(response.data);
+      setResult(normalizeReport(response.data));
       setActiveTab('dashboard');
     } catch (err) {
       console.error('Failed to fetch full report details:', err);
@@ -210,13 +213,15 @@ const App = () => {
             )}
 
             {activeTab === 'dashboard' && result && (
-              <motion.div 
+              <motion.div
                 key="dashboard"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <Dashboard result={result} onReset={resetInvestigation} />
+                <ErrorBoundary onReset={resetInvestigation}>
+                  <Dashboard result={result} onReset={resetInvestigation} />
+                </ErrorBoundary>
               </motion.div>
             )}
 

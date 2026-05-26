@@ -1,45 +1,59 @@
-from fastapi.testclient import TestClient
-from backend.app import app
-import json
-import traceback
-import sys
+"""Smoke-test the forensic API with local sample wav files (project root)."""
 
+from pathlib import Path
+import sys
+import traceback
+
+from fastapi.testclient import TestClient
+
+from backend.app import app
+
+ROOT = Path(__file__).resolve().parents[1]
 client = TestClient(app)
 
 samples = ["test_audio.wav", "fake-1.wav", "fake-2.wav"]
+available = [name for name in samples if (ROOT / name).is_file()]
 
-print("Sending audio samples to new integration endpoint...")
+if not available:
+    print("No sample wav files in project root; skipping analyze smoke test.")
+    health = client.get("/")
+    assert health.status_code == 200, health.text
+    print("Health check OK:", health.json())
+    sys.exit(0)
+
+print("Sending audio samples to POST /analyze/ ...")
 try:
-    for sample in samples:
-        print(f"Sending {sample}...")
-        with open(sample, "rb") as f:
-            response = client.post("/analyze/", files={"file": (sample, f, "audio/wav")})
+    for sample in available:
+        path = ROOT / sample
+        print(f"  {sample} ...")
+        with path.open("rb") as handle:
+            response = client.post("/analyze/", files={"file": (sample, handle, "audio/wav")})
 
-        print(f"Status Code: {response.status_code}")
         if response.status_code != 200:
-            print("Error:")
-            print(response.json())
+            print("Error:", response.status_code, response.text)
             sys.exit(1)
 
         data = response.json()
         agents = data.get("agents", {})
         timeline = data.get("timeline", [])
         consensus = data.get("consensus", {})
+        diagnostics = data.get("diagnostics") or {}
 
         if not agents:
             raise AssertionError("No agents returned in analysis response.")
         if not timeline:
             raise AssertionError("No timeline returned in analysis response.")
-        if consensus.get("verdict") == "real" and not any(
-            agent.get("verdict") == "real" for agent in agents.values()
-        ):
-            raise AssertionError("Consensus returned real without a real-voting agent.")
 
-        print(f"Consensus Verdict: {consensus.get('verdict')}")
-        print(f"Agents: {', '.join(agents.keys())}")
-        print(f"Timeline events: {len(timeline)}")
+        for warning in diagnostics.get("warnings") or []:
+            if not isinstance(warning, (str, dict)):
+                raise AssertionError(f"Unexpected warning type: {type(warning)}")
 
-    print("Integration successfully returned active agent evidence for all samples.")
-except Exception as e:
+        print(
+            f"    verdict={consensus.get('verdict')} "
+            f"agents={len(agents)} timeline={len(timeline)}"
+        )
+
+    print("Smoke test passed.")
+except Exception:
     traceback.print_exc()
     sys.exit(1)

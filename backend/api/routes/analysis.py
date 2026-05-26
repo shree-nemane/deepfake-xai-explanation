@@ -21,6 +21,7 @@ from backend.explainability.counterfactuals.counterfactual_engine import Counter
 from backend.explainability.evidence_graph import generate_evidence_graph
 from backend.explainability.narrative_engine import NarrativeEngine
 from backend.forensic.timeline_compression import compress_timeline_events
+from backend.forensic.features.acoustic_features import mel_spectrogram_preview_base64
 from backend.explainability.shap.shap_engine import SHAPEngine
 from enum import Enum as PyEnum
 
@@ -315,6 +316,36 @@ def _build_feature_analysis(agent_results, frontend_agents, chunk_consensus, pre
     }
 
 
+def _timeline_mel_key(row: dict) -> str:
+    return f"{row.get('start_time')}:{row.get('end_time')}"
+
+
+def _extract_mel_previews(timeline: list) -> tuple[list, dict]:
+    """Split mel PNG payloads out of timeline rows for lean DB storage."""
+    stripped = []
+    previews = {}
+    for row in timeline or []:
+        row = dict(row)
+        mel = row.pop("mel_preview_base64", None)
+        if mel:
+            previews[_timeline_mel_key(row)] = mel
+        stripped.append(row)
+    return stripped, previews
+
+
+def _apply_mel_previews(timeline: list, previews: dict) -> list:
+    if not previews:
+        return timeline
+    enriched = []
+    for row in timeline or []:
+        row = dict(row)
+        mel = previews.get(_timeline_mel_key(row))
+        if mel:
+            row["mel_preview_base64"] = mel
+        enriched.append(row)
+    return enriched
+
+
 def _diagnostic_warning(category: str, message: str) -> dict:
     return {"category": category, "message": message}
 
@@ -508,7 +539,11 @@ async def get_report(report_id: str, db: Session = Depends(get_db)):
     report = db.query(Report).filter(Report.id == report_id).first()
     if not report or not report.full_response:
         raise HTTPException(status_code=404, detail="Report not found")
-    return report.full_response
+    payload = dict(report.full_response)
+    mel_previews = payload.pop("mel_previews", None) or {}
+    if mel_previews and payload.get("timeline"):
+        payload["timeline"] = _apply_mel_previews(payload["timeline"], mel_previews)
+    return payload
 
 UPLOADS_DIR = "uploads"
 if not os.path.exists(UPLOADS_DIR):
@@ -745,6 +780,20 @@ def _run_analysis_from_path(temp_path, filename, db, report_id=None, progress_ca
         db.refresh(report)
 
         display_timeline = compress_timeline_events(frontend_timeline)
+
+        def _attach_mel_previews(timeline_rows, audio_samples, sample_rate=48000):
+            if audio_samples is None or len(audio_samples) == 0:
+                return
+            for row in timeline_rows:
+                start = float(row.get("start_time") or 0.0)
+                end = float(row.get("end_time") or start)
+                i0 = max(0, int(start * sample_rate))
+                i1 = min(len(audio_samples), max(i0 + 1, int(end * sample_rate)))
+                row["mel_preview_base64"] = mel_spectrogram_preview_base64(
+                    audio_samples[i0:i1], sample_rate
+                )
+
+        _attach_mel_previews(display_timeline, audio_48k)
         
         final_response = {
             "id": report.id,
@@ -792,7 +841,13 @@ def _run_analysis_from_path(temp_path, filename, db, report_id=None, progress_ca
             "created_at": report.created_at.isoformat()
         }
         
-        report.full_response = final_response
+        storage_timeline, mel_previews = _extract_mel_previews(final_response["timeline"])
+        storage_payload = {
+            **final_response,
+            "timeline": storage_timeline,
+            "mel_previews": mel_previews,
+        }
+        report.full_response = storage_payload
         db.commit()
         
         _emit_progress(progress_callback, "complete", status="complete", message="Analysis complete.", percent=100)
