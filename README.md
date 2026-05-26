@@ -220,7 +220,7 @@ Full schemas: **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)**
 | **`development`** | Active development |
 | **`main`** | Production-facing branch — application code and docs only |
 
-Develop on `development`. Release to `main` without internal planning artifacts.
+Develop on `development`. Merge to `main` for production-facing releases (application code and public documentation only).
 
 ---
 
