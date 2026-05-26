@@ -20,6 +20,7 @@ from backend.orchestration.forensic_orchestrator import AnalysisUnavailableError
 from backend.explainability.counterfactuals.counterfactual_engine import CounterfactualEngine
 from backend.explainability.evidence_graph import generate_evidence_graph
 from backend.explainability.narrative_engine import NarrativeEngine
+from backend.forensic.timeline_compression import compress_timeline_events
 from backend.explainability.shap.shap_engine import SHAPEngine
 from enum import Enum as PyEnum
 
@@ -314,6 +315,20 @@ def _build_feature_analysis(agent_results, frontend_agents, chunk_consensus, pre
     }
 
 
+def _diagnostic_warning(category: str, message: str) -> dict:
+    return {"category": category, "message": message}
+
+
+def _flatten_diagnostic_warnings(warnings: list) -> list:
+    flat = []
+    for item in warnings or []:
+        if isinstance(item, dict):
+            flat.append(item.get("message") or str(item))
+        else:
+            flat.append(str(item))
+    return flat
+
+
 def _build_diagnostics(global_consensus, frontend_agents, chunk_consensus):
     reliability = (frontend_agents.get("reliability") or {}).get("evidence", {})
     reliability_score = _safe_float(reliability.get("reliability_score"), 1.0)
@@ -324,17 +339,45 @@ def _build_diagnostics(global_consensus, frontend_agents, chunk_consensus):
     event_counts = Counter(_get_event_name(event) for event in chunk_consensus)
 
     decision_reliability = max(0.0, min(1.0, confidence * 0.45 + convergence * 0.35 + reliability_score * 0.20))
-    warnings = []
+    quality_warnings = []
+    synthesis_warnings = []
     if reliability_score < 0.6:
-        warnings.append("Recording quality is degraded; calibrated agent confidence has been suppressed.")
+        quality_warnings.append(
+            _diagnostic_warning(
+                "signal_quality",
+                "Recording quality is degraded; calibrated agent confidence has been suppressed.",
+            )
+        )
     if clipping_ratio > 0.01:
-        warnings.append("Clipping is above forensic threshold and may hide synthesis artifacts.")
+        quality_warnings.append(
+            _diagnostic_warning(
+                "signal_quality",
+                "Clipping is above forensic threshold and may hide synthesis artifacts.",
+            )
+        )
     if event_counts.get("contradiction", 0) > 0:
-        warnings.append("Agents disagree on at least one chunk; inspect the temporal timeline before relying on the verdict.")
+        synthesis_warnings.append(
+            _diagnostic_warning(
+                "synthesis_evidence",
+                "Agents disagree on at least one chunk; inspect the temporal timeline before relying on the verdict.",
+            )
+        )
     if confidence < 0.6:
-        warnings.append("Consensus confidence is low; treat this as analyst-support evidence, not a final conclusion.")
+        synthesis_warnings.append(
+            _diagnostic_warning(
+                "synthesis_evidence",
+                "Consensus confidence is low; treat this as analyst-support evidence, not a final conclusion.",
+            )
+        )
     if probability_margin < 0.08:
-        warnings.append("Fake/real probability margin is narrow; the global verdict has been held back.")
+        synthesis_warnings.append(
+            _diagnostic_warning(
+                "synthesis_evidence",
+                "Fake/real probability margin is narrow; the global verdict has been held back.",
+            )
+        )
+
+    warnings = quality_warnings + synthesis_warnings
 
     if decision_reliability >= 0.75:
         review_level = "high_trust"
@@ -347,6 +390,8 @@ def _build_diagnostics(global_consensus, frontend_agents, chunk_consensus):
         "decision_reliability": decision_reliability,
         "review_level": review_level,
         "warnings": warnings,
+        "quality_warnings": quality_warnings,
+        "synthesis_warnings": synthesis_warnings,
         "event_counts": dict(event_counts),
         "agent_count": len(frontend_agents),
         "chunk_count": len(chunk_consensus),
@@ -698,6 +743,8 @@ def _run_analysis_from_path(temp_path, filename, db, report_id=None, progress_ca
             
         db.commit()
         db.refresh(report)
+
+        display_timeline = compress_timeline_events(frontend_timeline)
         
         final_response = {
             "id": report.id,
@@ -713,7 +760,9 @@ def _run_analysis_from_path(temp_path, filename, db, report_id=None, progress_ca
                 "decision_threshold": global_consensus.get("decision_threshold")
             },
             "agents": frontend_agents,
-            "timeline": frontend_timeline,
+            "timeline": display_timeline,
+            "timeline_raw_count": len(frontend_timeline),
+            "timeline_display_count": len(display_timeline),
             "preprocessing": preprocessing,
             "feature_analysis": feature_analysis,
             "diagnostics": diagnostics,

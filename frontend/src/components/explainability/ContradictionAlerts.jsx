@@ -24,15 +24,60 @@ const ContradictionAlerts = ({ result }) => {
       (a, b) => (SEVERITY_RANK[a.severity] ?? 99) - (SEVERITY_RANK[b.severity] ?? 99),
     );
 
-    const diagnosticRows = (result?.diagnostics?.warnings || []).map((message, index) => ({
-      id: `diag-${index}`,
-      kind: 'diagnostic',
-      type: 'diagnostic',
-      severity: 'elevated',
-      description: message,
-      start_time: null,
-      end_time: null,
-    }));
+    const normalizeWarning = (warning) => {
+      if (typeof warning === 'string') {
+        return { category: 'general', message: warning };
+      }
+      return {
+        category: warning.category || 'general',
+        message: warning.message || String(warning),
+      };
+    };
+
+    const qualityRows = (result?.diagnostics?.quality_warnings || []).map((warning, index) => {
+      const row = normalizeWarning(warning);
+      return {
+        id: `quality-${index}`,
+        kind: 'quality',
+        type: row.category,
+        severity: 'info',
+        description: row.message,
+        start_time: null,
+        end_time: null,
+      };
+    });
+
+    const synthesisRows = (result?.diagnostics?.synthesis_warnings || []).map((warning, index) => {
+      const row = normalizeWarning(warning);
+      return {
+        id: `synthesis-${index}`,
+        kind: 'synthesis',
+        type: row.category,
+        severity: 'elevated',
+        description: row.message,
+        start_time: null,
+        end_time: null,
+      };
+    });
+
+    const fallbackRows = (result?.diagnostics?.warnings || []).map((warning, index) => {
+      const row = normalizeWarning(warning);
+      const kind = row.category === 'signal_quality' ? 'quality' : 'synthesis';
+      return {
+        id: `diag-${index}`,
+        kind,
+        type: row.category,
+        severity: kind === 'quality' ? 'info' : 'elevated',
+        description: row.message,
+        start_time: null,
+        end_time: null,
+      };
+    });
+
+    const diagnosticRows =
+      qualityRows.length || synthesisRows.length
+        ? [...qualityRows, ...synthesisRows]
+        : fallbackRows;
 
     return { threats: threatRows, diagnostics: diagnosticRows };
   }, [result]);
@@ -64,10 +109,15 @@ const ContradictionAlerts = ({ result }) => {
             </div>
           ))}
           {diagnostics.map((row) => (
-            <div key={row.id} className="threat-alert diagnostic-alert">
+            <div
+              key={row.id}
+              className={`threat-alert diagnostic-alert ${row.kind === 'quality' ? 'quality-alert' : 'synthesis-alert'}`}
+            >
               <div className="threat-alert-header">
-                <span className="threat-type">diagnostic</span>
-                <span className="threat-severity">info</span>
+                <span className="threat-type">
+                  {row.kind === 'quality' ? 'signal quality' : 'synthesis evidence'}
+                </span>
+                <span className="threat-severity">{row.severity}</span>
               </div>
               <p className="threat-description">{row.description}</p>
             </div>

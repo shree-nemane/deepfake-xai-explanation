@@ -30,7 +30,7 @@ def compute_abnormality_scores(features):
             # 1-2: mild (0.2-0.5)
             # 2-3: moderate (0.5-0.8)
             # > 3: severe (0.8-1.0)
-            risk = min(1.0, z_score / 4.0) 
+            risk = min(1.0, z_score / 5.0) 
             
             scores[feature] = {
                 "value": value,

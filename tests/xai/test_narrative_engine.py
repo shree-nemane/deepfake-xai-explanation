@@ -47,3 +47,50 @@ def test_narrative_mentions_low_reliability():
     )
 
     assert "degraded" in result["structured_summary"]
+
+
+def test_inconclusive_narrative_explains_acoustic_neural_split():
+    result = NarrativeEngine().generate(
+        global_consensus={
+            "verdict": "inconclusive",
+            "confidence": 0.5,
+            "uncertainty": 0.4,
+            "convergence_strength": 0.3,
+            "probability_margin": 0.05,
+        },
+        frontend_agents={
+            "acoustic": {"verdict": "fake"},
+            "wavlm": {"verdict": "real"},
+            "convnext": {"verdict": "real"},
+            "reliability": {"evidence": {"reliability_score": 0.85}},
+        },
+        chunk_consensus=[],
+        diagnostics={
+            "quality_warnings": [],
+            "synthesis_warnings": [
+                {"category": "synthesis_evidence", "message": "Agents disagree on at least one chunk."}
+            ],
+        },
+    )
+
+    assert "acoustic threshold mismatch" in result["structured_summary"].lower()
+    assert "wavlm" in result["structured_summary"]
+
+
+def test_inconclusive_narrative_separates_quality_and_synthesis():
+    result = NarrativeEngine().generate(
+        global_consensus={"verdict": "inconclusive", "confidence": 0.45, "uncertainty": 0.5, "convergence_strength": 0.2},
+        frontend_agents={"reliability": {"evidence": {"reliability_score": 0.4}}},
+        chunk_consensus=[],
+        diagnostics={
+            "quality_warnings": [
+                {"category": "signal_quality", "message": "Recording quality is degraded."}
+            ],
+            "synthesis_warnings": [
+                {"category": "synthesis_evidence", "message": "Consensus confidence is low."}
+            ],
+        },
+    )
+
+    assert "signal quality" in result["structured_summary"].lower()
+    assert "synthesis evidence" in result["structured_summary"].lower()

@@ -8,10 +8,10 @@ from backend.forensic.anomaly.zscore_engine import compute_abnormality_scores, c
 
 logger = logging.getLogger(__name__)
 
-# Anomaly threshold: scores above this lean towards fake
-_ANOMALY_THRESHOLD = 0.4
+# Anomaly threshold: scores above this lean towards fake (raised post-UAT to reduce false fake)
+_ANOMALY_THRESHOLD = 0.52
 # Scaling factor to map distance-from-threshold into [0, 0.99] confidence
-_CONFIDENCE_SCALE = 2.5
+_CONFIDENCE_SCALE = 2.2
 
 
 class AcousticAgent(BaseAgent):

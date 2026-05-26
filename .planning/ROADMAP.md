@@ -73,4 +73,19 @@
 - **Phase 5**: `UI-02`, `UI-03`
 
 *Requirements Coverage: 17/17 (100% mapped) ✓*
-*Last updated: 2026-05-24 after Phase 4 execution*
+*Last updated: 2026-05-25 after UAT feedback capture*
+
+---
+
+## Post–v1 UAT improvements (shipped 2026-05-25)
+
+Captured from live run review; implemented on `development` after v1 milestone.
+
+- **999.1 Timeline compression** — `compress_timeline_events` (API + `TimelinePanel` + `compressTimeline.js`)
+- **999.2 Inconclusive narrative** — `NarrativeEngine._inconclusive_rationale` with agent-split attribution
+- **999.3 Acoustic calibration** — threshold 0.52, softer z-score risk curve (`/5.0`)
+- **999.4 Quality vs synthesis** — categorized `quality_warnings` / `synthesis_warnings` in diagnostics + UI
+
+### Validated (no change planned)
+
+- Fail-closed / `inconclusive` when consensus is weak — **keep as-is**.

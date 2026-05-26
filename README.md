@@ -130,6 +130,15 @@ python -m backend.app
 API: `http://localhost:8000`  
 OpenAPI: `http://localhost:8000/docs`
 
+**Verify the forensic API** (not another app on port 8000):
+
+```powershell
+curl http://localhost:8000/
+# Expected: {"status":"online","message":"Deepfake Forensic AI API is operational."}
+```
+
+If you see a Django page or connection errors, stop other servers on port 8000 and run `python -m backend.app` again. The React dev server must use `http://localhost:5173` so CORS matches `backend/app.py`.
+
 ### 2. Frontend
 
 ```powershell
