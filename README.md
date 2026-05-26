@@ -86,9 +86,10 @@ deepfake-xai/
 ├── tests/                        # pytest suites
 ├── scripts/
 │   ├── run-dev.ps1               # Start API + UI (Windows)
-│   └── verify.py                 # Quick API smoke test
-├── docs/
-│   └── API_REFERENCE.md          # HTTP API documentation
+│   ├── verify.py                 # Quick API smoke test
+│   └── extract_report_sample.py  # Export redacted report JSON for papers
+├── API_REFERENCE.md              # HTTP API documentation
+├── RESEARCH_AND_REPORT_DOC.md    # Paper / blackbook / architecture source
 └── DFXAI_project_spec.md         # Product specification
 ```
 
@@ -190,7 +191,7 @@ npm run build
 | GET | `/analyze/history` | Recent reports |
 | GET | `/analyze/{report_id}` | Load saved report |
 
-Full schemas: **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)**
+Full schemas: **[API_REFERENCE.md](API_REFERENCE.md)**
 
 ---
 
@@ -248,11 +249,14 @@ Develop on `development`. Merge to `main` for production-facing releases (applic
 
 ## Documentation
 
+All reference documents live at the **repository root** for easy sharing with collaborators.
+
 | Document | Description |
 |----------|-------------|
-| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | HTTP API, schemas, examples |
-| [RESEARCH_AND_REPORT_DOC.md](RESEARCH_AND_REPORT_DOC.md) | Paper, blackbook, and architecture source material |
+| [RESEARCH_AND_REPORT_DOC.md](RESEARCH_AND_REPORT_DOC.md) | **Start here for papers/blackbook** — architecture, methods, case study, JSON excerpts |
+| [API_REFERENCE.md](API_REFERENCE.md) | HTTP API, schemas, curl examples |
 | [DFXAI_project_spec.md](DFXAI_project_spec.md) | Product specification and system design |
+| `sample_report_redacted.json` | Full analysis JSON (generate: `python scripts/extract_report_sample.py`) |
 | http://localhost:8000/docs | Live OpenAPI when backend is running |
 
 ---

@@ -1,7 +1,7 @@
 # Research & Implementation Report — Consensus-Based Explainable Forensic Audio Intelligence Platform
 
-**Document version:** 1.0  
-**Generated:** 2026-05-26  
+**Document version:** 1.1  
+**Generated:** 2026-05-26 (updated for root-level docs + embedded JSON excerpts)  
 **Primary branch analyzed:** `development`  
 **Comparison baseline:** `main`  
 **Database sample:** `real_sample_voice.wav` → report `0fada112-21cd-4b0b-9295-e2870b1d300a`  
@@ -18,11 +18,32 @@ This file is the **single source document** for writing:
 - An **architecture summary** for reviewers
 - An **experimental results / case-study** section grounded in a real stored analysis
 
-It is built from **side-by-side inspection** of the `development` codebase, `main` branch history, `DFXAI_project_spec.md`, `docs/API_REFERENCE.md`, `README.md`, SQLite analysis history (`forensic_intelligence.db`), and frontend component structure.
+It is built from **side-by-side inspection** of the `development` codebase, `main` branch history, `DFXAI_project_spec.md`, `API_REFERENCE.md`, `README.md`, SQLite analysis history (`forensic_intelligence.db`), and frontend component structure.
 
-**Note on `project_info.md`:** No file named `project_info.md` exists in this repository. The authoritative product and system-design source is **`DFXAI_project_spec.md`**. Requirement IDs referenced in this document (e.g. XAI-06, UI-02) appear in that specification and in phase completion notes embedded in git history on `development`.
+### Documentation at repository root (start here)
 
-**Note on screenshots:** No committed UI screenshots were found in the repository at generation time. Frontend behavior is described from React component structure and persisted API payloads; visual captures are **not included** unless added manually later.
+| File | Use for |
+|------|---------|
+| **`RESEARCH_AND_REPORT_DOC.md`** (this file) | Blackbook chapters, paper methods/results framing, architecture, case study, JSON excerpts |
+| **`DFXAI_project_spec.md`** | Original PRD, requirement IDs, v1 scope boundaries |
+| **`API_REFERENCE.md`** | HTTP endpoints, request/response schemas, curl examples |
+| **`README.md`** | Setup, run, test, troubleshooting |
+| **`sample_report_redacted.json`** | Full API payload export (generate locally; see §15.6) |
+
+### Guide for paper / blackbook authors
+
+1. **Abstract & introduction** — §1–3 (problem, motivation, research gap).  
+2. **System design** — §5–12 (architecture, preprocessing, agents, consensus, XAI, DB, API).  
+3. **Implementation** — §4, §14, §19 (evolution, frontend, viva demo script).  
+4. **Results / case study** — §15–16 (real `inconclusive` sample with agent split); cite tables and JSON excerpts.  
+5. **Evaluation** — §17 (what is tested vs what still needs a labeled benchmark).  
+6. **Limitations & future work** — §18, §23 (honest gaps).  
+7. **Terminology** — §20 for consistent definitions.  
+8. **Reproduce outputs** — run backend, upload `real_sample_voice.wav` (or any WAV), or run `python scripts/extract_report_sample.py` after analysis.
+
+**Note on `project_info.md`:** No file named `project_info.md` exists in this repository. The authoritative product and system-design source is **`DFXAI_project_spec.md`**. Requirement IDs referenced in this document (e.g. XAI-06, UI-02) appear in that specification.
+
+**Note on screenshots:** No committed UI screenshots were found in the repository. Frontend behavior is described from React components and persisted API payloads; add screenshots manually for the blackbook if required.
 
 ---
 
@@ -131,7 +152,7 @@ The current platform reframes detection as **multi-expert temporal consensus und
 - Phase 5 UI: explainability drawer, forensic explanation tab, Plotly graph
 - Chunk evidence explorer, mel spectrogram previews, timeline compression
 - UAT calibration (acoustic threshold, quality vs synthesis diagnostic split)
-- `docs/API_REFERENCE.md`, expanded `README.md`, `scripts/run-dev.ps1`, `scripts/extract_report_sample.py`
+- `API_REFERENCE.md`, expanded `README.md`, `scripts/run-dev.ps1`, `scripts/extract_report_sample.py`
 - Structured pytest suites under `tests/xai/`, `tests/forensic/`, etc.
 
 ### 4.2 Quantitative diff (git)
@@ -615,12 +636,111 @@ Structured summary additionally contains six markdown sections with inconclusive
 }
 ```
 
-### 15.6 Redacted full sample
+### 15.6 Redacted full sample (machine-readable)
 
-A redacted JSON export (no raw base64 blobs) is available at:
+Generate at repository root (gitignored; safe to share after review — base64 replaced with size placeholders):
 
-- **`docs/sample_report_redacted.json`**  
-- Regenerate: `python scripts/extract_report_sample.py --report-id 0fada112-21cd-4b0b-9295-e2870b1d300a`
+```bash
+python scripts/extract_report_sample.py --report-id 0fada112-21cd-4b0b-9295-e2870b1d300a
+# → sample_report_redacted.json
+```
+
+Wrapper shape:
+
+```json
+{
+  "report_id": "0fada112-21cd-4b0b-9295-e2870b1d300a",
+  "filename": "real_sample_voice.wav",
+  "created_at": "2026-05-26 08:07:08.801776",
+  "payload": { }
+}
+```
+
+The `payload` object matches **`AnalysisResponse`** (see `API_REFERENCE.md` and §16).
+
+### 15.7 Representative JSON excerpts (from real analysis)
+
+**Diagnostics and review level**
+
+```json
+{
+  "decision_reliability": 0.732,
+  "review_level": "moderate_trust",
+  "quality_warnings": [],
+  "synthesis_warnings": [
+    {
+      "category": "synthesis_evidence",
+      "message": "Agents disagree on at least one chunk; inspect the temporal timeline before relying on the verdict."
+    }
+  ],
+  "event_counts": { "contradiction": 13 },
+  "chunk_count": 13
+}
+```
+
+**Compressed timeline segment (13 chunks → 1 display row)**
+
+```json
+{
+  "start_time": 0.0,
+  "end_time": 14.0,
+  "event_type": "contradiction",
+  "verdict": "real",
+  "confidence": 0.634,
+  "segment_count": 13,
+  "threat_warnings": [
+    {
+      "type": "partial_synthesis",
+      "description": "Partial Synthesis Threat: Multi-agent consensus split...",
+      "severity": "elevated"
+    }
+  ],
+  "details": {
+    "acoustic": { "verdict": "fake", "suppression_factor": 0.9999, "calibrated_confidence": 0.892 },
+    "convnext": { "verdict": "real", "suppression_factor": 1.0, "calibrated_confidence": 0.916 },
+    "wavlm": { "verdict": "real", "calibrated_confidence": 0.686 },
+    "aasist": { "verdict": "real", "calibrated_confidence": 0.681 }
+  }
+}
+```
+
+**XAI summaries (global, paper-ready one-liners)**
+
+```json
+{
+  "shap_summary": "Exact Shapley attributions computed over calibrated consensus coalitions. Top contributor: acoustic (0.287).",
+  "counterfactual_summary": "If acoustic adjusted confidence decreased by 10%, fake probability would decrease by about 0.031."
+}
+```
+
+**Narrative metadata**
+
+```json
+{
+  "narrative_version": "deterministic_v1",
+  "verdict": "inconclusive",
+  "threat_count": 13,
+  "sections": ["Finding", "Evidence", "Reliability", "Confidence", "Contradictions", "Explainability"],
+  "agent_verdicts": {
+    "acoustic": "fake",
+    "aasist": "real",
+    "convnext": "real",
+    "wavlm": "real"
+  }
+}
+```
+
+**Processing metadata (reproducibility)**
+
+```json
+{
+  "chunk_duration": 2.0,
+  "overlap": 0.5,
+  "sample_rates": { "semantic": 16000, "forensic": 48000 },
+  "schema_version": "v2.0",
+  "pipeline_version": "forensic_pipeline_v1"
+}
+```
 
 ---
 
@@ -648,15 +768,18 @@ A redacted JSON export (no raw base64 blobs) is available at:
       "evidence": { }
     }
   },
+  "timeline_raw_count": 13,
+  "timeline_display_count": 1,
   "timeline": [
     {
       "start_time": 0.0,
       "end_time": 2.0,
-      "event_type": "contradiction|agreement|splice|...",
+      "event_type": "contradiction|agreement|splice|quality_failure|reliability_warning",
       "verdict": "fake|real|inconclusive",
       "confidence": 0.0,
       "convergence_strength": 0.0,
-      "details": { "<agent>": { "verdict", "calibrated_confidence", "suppression_factor", ... } },
+      "details": { "<agent>": { "verdict", "calibrated_confidence", "suppression_factor", "effective_reliability", ... } },
+      "deep_reasoning": [ "..." ],
       "threat_warnings": [ { "type", "description", "severity" } ],
       "segment_count": 1
     }
@@ -835,10 +958,10 @@ A redacted JSON export (no raw base64 blobs) is available at:
 | Document | Path |
 |----------|------|
 | Master PRD / system design | `DFXAI_project_spec.md` |
-| API reference | `docs/API_REFERENCE.md` |
+| API reference | `API_REFERENCE.md` |
 | Setup, testing, troubleshooting | `README.md` |
 | This report (paper / blackbook source) | `RESEARCH_AND_REPORT_DOC.md` |
-| Sample report (redacted; generate locally) | Run `python scripts/extract_report_sample.py` → `docs/sample_report_redacted.json` (gitignored) |
+| Sample report (redacted; generate locally) | `python scripts/extract_report_sample.py` → `sample_report_redacted.json` (gitignored) |
 
 ---
 
@@ -854,4 +977,41 @@ A redacted JSON export (no raw base64 blobs) is available at:
 
 ---
 
-*End of document. For updates after new commits, regenerate Section 15 via `scripts/extract_report_sample.py` and re-run pytest.*
+## 24. Appendix D — Configuration constants (from code)
+
+Values below are implemented in the repository and suitable for methods / implementation chapters.
+
+| Constant | Value | Location / role |
+|----------|-------|-----------------|
+| Chunk window | 2.0 s | `TimelineManager`, `processing_metadata` |
+| Chunk overlap | 50% (1.0 s hop) | Segmentation |
+| LUFS target | −23.0 | `AudioProcessor` |
+| Fail-closed reliability | < 0.20 | Neural agents skipped |
+| Global decision confidence floor | 0.60 | `_MIN_GLOBAL_DECISION_CONFIDENCE` |
+| Global probability margin floor | 0.08 | `_MIN_GLOBAL_PROBABILITY_MARGIN` |
+| Default decision threshold | 0.60 | `consensus.decision_threshold` |
+| Acoustic fake threshold | 0.52 | Post-UAT calibration |
+| SHAP coalition count | 16 (2⁴ agents) | `shap_engine.py` |
+| Evidence graph schema | `evidence_graph_v1` | `evidence_graph.py` |
+| Narrative generator | `deterministic_v1` | `narrative_engine.py` |
+| DB schema / pipeline | `v2.0` / `forensic_pipeline_v1` | `processing_metadata` |
+| Supported uploads | `.wav`, `.mp3` | API validation |
+| History list limit | 20 reports | `GET /analyze/history` |
+
+### 24.1 Key source files (implementation map)
+
+| Subsystem | Primary modules |
+|-----------|-----------------|
+| API & jobs | `backend/api/routes/analysis.py`, `backend/api/schemas/analysis.py` |
+| Preprocessing | `backend/preprocessing/audio_processor.py` |
+| Segmentation | `backend/orchestration/timeline_manager.py` |
+| Agents | `backend/agents/*.py`, `backend/agents/model_hub.py` |
+| Consensus | `backend/consensus/consensus_engine.py`, `calibration_engine.py` |
+| XAI | `backend/explainability/shap/shap_engine.py`, `counterfactuals/counterfactual_engine.py`, `evidence_graph.py`, `narrative_engine.py` |
+| Persistence | `backend/persistence/database.py` |
+| UI | `frontend/src/features/analysis/Dashboard.jsx`, `frontend/src/components/forensic/*`, `frontend/src/components/explainability/*` |
+| Legacy (not in live path) | `backend/deepfake_logic.py` |
+
+---
+
+*End of document. After new analyses, regenerate `sample_report_redacted.json` and refresh §15–16; re-run `python -m pytest` for verification counts.*

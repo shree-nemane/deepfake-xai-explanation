@@ -190,6 +190,9 @@ Pydantic model: `backend/api/schemas/analysis.py`
 | `xai` | object | SHAP, counterfactuals, evidence graph |
 | `narrative` | object | Structured + human summaries |
 | `heatmap_base64` | string \| null | ConvNext Grad-CAM PNG (base64) |
+| `mel_previews` | object \| null | Map of `"start:end"` → PNG base64 (per display segment; stripped from DB timeline rows) |
+| `timeline_raw_count` | int \| null | Chunk count before UI compression |
+| `timeline_display_count` | int \| null | Segment count after compression |
 | `processing_metadata` | object | Chunk duration, overlap, sample rates |
 | `created_at` | datetime | Report timestamp |
 
@@ -231,6 +234,7 @@ Pydantic model: `backend/api/schemas/analysis.py`
 | `details` | object | Per-agent calibrated details |
 | `deep_reasoning` | array | Optional reasoning strings |
 | `threat_warnings` | array | Contradiction/threat objects |
+| `segment_count` | int \| null | Number of raw chunks merged into this display segment |
 
 **Threat warning object**
 
@@ -308,13 +312,63 @@ Pydantic model: `backend/api/schemas/analysis.py`
 |-------|------|-------------|
 | `structured_summary` | string | Markdown sections: Finding, Evidence, Reliability, Confidence, Contradictions, Explainability |
 | `human_summary` | string | Single-paragraph summary |
-| `metadata` | object | `narrative_version`, section list, generator info |
+| `metadata` | object | `narrative_version`, `verdict`, `threat_count`, `sections`, `agent_verdicts`, `top_shap_agents` |
+
+### `diagnostics`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `decision_reliability` | float | 0–1 aggregate trust in the decision |
+| `review_level` | string | e.g. `moderate_trust`, `high_trust`, `low_trust` |
+| `warnings` | array | Combined analyst warnings (`{category, message}`) |
+| `quality_warnings` | array | Recording-quality issues (SNR, clipping, etc.) |
+| `synthesis_warnings` | array | Agent disagreement / low confidence |
+| `event_counts` | object | Counts by `event_type` (e.g. `contradiction`) |
+| `agent_count` | int | Agents in response |
+| `chunk_count` | int | Temporal chunks analyzed |
+
+**Warning object**
+
+```json
+{
+  "category": "synthesis_evidence",
+  "message": "Agents disagree on at least one chunk; inspect the temporal timeline before relying on the verdict."
+}
+```
+
+### `feature_analysis` (summary)
+
+| Block | Contents |
+|-------|----------|
+| `preprocessing` | Same shape as top-level `preprocessing` |
+| `signal_quality` | `snr_db`, `clipping_ratio`, `spectral_flatness`, `rms_energy`, `reliability_score` |
+| `acoustic_features` | Ranked list: `feature`, `avg_z_score`, `avg_risk_score`, `severity` |
+| `neural_signals` | Per-agent aggregate meters for dashboard |
+| `consensus_events` | Event type counts |
+
+---
+
+## Sample report JSON
+
+Regenerate a redacted full response (base64 replaced with length placeholders):
+
+```bash
+python scripts/extract_report_sample.py --report-id <uuid>
+# writes sample_report_redacted.json at repo root
+```
+
+Canonical case study in **`RESEARCH_AND_REPORT_DOC.md`** §15–16 uses report `0fada112-21cd-4b0b-9295-e2870b1d300a` (`real_sample_voice.wav`).
 
 ---
 
 ## CORS
 
-The API allows all origins (`*`) for local development. **Do not use this setting in production.**
+Explicit dev origins only (required when `allow_credentials=True`):
+
+- `http://localhost:5173`, `http://127.0.0.1:5173`
+- `http://localhost:5174`, `http://127.0.0.1:5174`
+
+Configured in `backend/app.py`. **Do not use wildcard `*` with credentials in production.**
 
 ---
 
@@ -361,4 +415,4 @@ curl -F "file=@sample.wav" http://localhost:8000/analyze/
 
 ---
 
-*Generated for v1 milestone — matches `development` branch as of Phase 5 completion.*
+*API reference for v1 — see `RESEARCH_AND_REPORT_DOC.md` for paper/blackbook narrative and case study.*
