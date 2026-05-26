@@ -18,9 +18,9 @@ This file is the **single source document** for writing:
 - An **architecture summary** for reviewers
 - An **experimental results / case-study** section grounded in a real stored analysis
 
-It is built from **side-by-side inspection** of the `development` codebase, `main` branch history, `DFXAI_project_spec.md`, `.planning/PROJECT.md`, `.planning/codebase/ARCHITECTURE.md`, SQLite history, and frontend component structure.
+It is built from **side-by-side inspection** of the `development` codebase, `main` branch history, `DFXAI_project_spec.md`, `docs/API_REFERENCE.md`, `README.md`, SQLite analysis history (`forensic_intelligence.db`), and frontend component structure.
 
-**Note on `project_info.md`:** No file named `project_info.md` exists in this repository. Equivalent authoritative sources are **`DFXAI_project_spec.md`** (master PRD + system design) and **`.planning/PROJECT.md`** (requirements traceability). Where this document cites “project spec,” it refers to those files.
+**Note on `project_info.md`:** No file named `project_info.md` exists in this repository. The authoritative product and system-design source is **`DFXAI_project_spec.md`**. Requirement IDs referenced in this document (e.g. XAI-06, UI-02) appear in that specification and in phase completion notes embedded in git history on `development`.
 
 **Note on screenshots:** No committed UI screenshots were found in the repository at generation time. Frontend behavior is described from React component structure and persisted API payloads; visual captures are **not included** unless added manually later.
 
@@ -138,7 +138,7 @@ The current platform reframes detection as **multi-expert temporal consensus und
 
 Approximately **75 files** differ between `main` and `development` (~7,100 insertions / ~400 deletions in prior diff stat), dominated by explainability, frontend, tests, and documentation.
 
-### 4.3 Milestone mapping (GSD phases → deliverables)
+### 4.3 Implementation phases (v1 deliverables)
 
 | Phase | Theme | Key deliverables |
 |-------|--------|------------------|
@@ -696,7 +696,7 @@ A redacted JSON export (no raw base64 blobs) is available at:
 | `tests/forensic/` | Timeline compression |
 | **Total** | **67 passed**, 4 skipped (performance/benchmark placeholders) |
 
-### 17.2 Manual / UAT observations (documented in `.planning/STATE.md`)
+### 17.2 Manual / UAT observations (2026-05-25 — 2026-05-26)
 
 - Fail-closed **inconclusive** under agent split: **correct by design**
 - Acoustic fake vs neural real: calibration target, not architecture failure
@@ -795,17 +795,28 @@ A redacted JSON export (no raw base64 blobs) is available at:
 
 ---
 
-## 21. GSD / project progress snapshot
+## 21. Version status and release snapshot (2026-05-26)
 
 | Item | Status |
 |------|--------|
-| Phases 1–5 | Complete (per `.planning/ROADMAP.md`) |
-| Requirements v1 | 17/17 mapped |
-| Post-UAT backlog 999.1–999.4 | Implemented on `development` |
-| Milestone archive | Pending (`/gsd-complete-milestone`) |
-| Uncommitted local fixes | UI crash fix, README, mel storage, scripts (see `git status`) |
+| v1 implementation phases 1–5 | Complete (DB/suppression, consensus warnings, XAI core, evidence graph + progress UI, explainability console) |
+| Core capability areas | Dual-stream preprocessing, five agents, fail-closed consensus, exact SHAP, Level 1 sensitivity, 6-layer evidence graph, deterministic narrative, React investigation UI |
+| Post-UAT improvements | Timeline compression, inconclusive narrative detail, acoustic threshold calibration (0.52), quality vs synthesis diagnostic categories, mel segment previews, dashboard stability fixes |
+| Automated verification | 67 pytest passed, 4 skipped; frontend production build OK |
+| Repository branches | `development` (full tree); `main` (application + public docs only) |
+| Research deliverable | This document + `scripts/extract_report_sample.py` for case-study JSON export |
 
-**Recommended next step:** Commit stabilization fixes → user-approved push `development` → optional `main` release without `.planning/`.
+### 21.1 v1 requirement themes (for traceability in reports)
+
+| ID prefix | Theme |
+|-----------|--------|
+| PRE / SEG | LUFS normalization, VAD, dual-stream resampling, 2 s / 50% overlap chunking |
+| AGT | ConvNext, WavLM, AASIST (heuristic), Acoustic, Reliability agents |
+| CON / SUP | Consensus engine, reliability suppression, fail-closed below 0.20 |
+| XAI | Exact Shapley (XAI-06), analytical sensitivity (XAI-07), evidence graph (XAI-08), narrative (XAI-09), threat warnings (XAI-10) |
+| UI | Progress stages (UI-04), explainability drawer (UI-02), forensic explanation tab (UI-03) |
+| DB | Consolidated SQLite schema (DB-02, DB-03) |
+| TST | Unit, integration, consensus, and XAI test suites |
 
 ---
 
@@ -824,11 +835,10 @@ A redacted JSON export (no raw base64 blobs) is available at:
 | Document | Path |
 |----------|------|
 | Master PRD / system design | `DFXAI_project_spec.md` |
-| Requirements traceability | `.planning/REQUIREMENTS.md` |
-| Architecture notes | `.planning/codebase/ARCHITECTURE.md` |
 | API reference | `docs/API_REFERENCE.md` |
-| User README | `README.md` |
-| Sample report (redacted) | `docs/sample_report_redacted.json` |
+| Setup, testing, troubleshooting | `README.md` |
+| This report (paper / blackbook source) | `RESEARCH_AND_REPORT_DOC.md` |
+| Sample report (redacted; generate locally) | Run `python scripts/extract_report_sample.py` → `docs/sample_report_redacted.json` (gitignored) |
 
 ---
 
