@@ -31,7 +31,7 @@ def redact(obj, parent_key=None):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--report-id", help="Report UUID (default: latest)")
-    parser.add_argument("--out", default="docs/sample_report_redacted.json")
+    parser.add_argument("--out", default="sample_report_redacted.json")
     args = parser.parse_args()
 
     if not DB.exists():

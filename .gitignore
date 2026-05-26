@@ -168,4 +168,5 @@ uploads/
 evaluation_results/
 
 # Generated documentation artifacts (regenerate via scripts/extract_report_sample.py)
+sample_report_redacted.json
 docs/sample_report_redacted.json
