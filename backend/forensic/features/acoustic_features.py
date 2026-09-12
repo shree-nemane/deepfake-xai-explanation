@@ -50,9 +50,10 @@ def extract_all_features(y, sr):
     features["rms_energy"] = float(np.mean(rms))
     
     # 9. Simple Jitter/Shimmer approximations (since we don't have parselmouth easily available)
-    # Jitter: average absolute difference between consecutive fundamental frequencies
-    if len(pitch) > 1:
-        features["jitter"] = float(np.mean(np.abs(np.diff(pitch))))
+    # Jitter: relative average absolute difference between consecutive fundamental frequencies (%)
+    if len(pitch_clean) > 1 and np.mean(pitch_clean) > 0:
+        mean_f0 = float(np.mean(pitch_clean))
+        features["jitter"] = float((np.mean(np.abs(np.diff(pitch_clean))) / mean_f0) * 100.0)
     else:
         features["jitter"] = 0.0
         

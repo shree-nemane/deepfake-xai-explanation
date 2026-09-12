@@ -4,15 +4,22 @@
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $Root
 
-if (-not (Test-Path ".venv\Scripts\Activate.ps1")) {
-    Write-Error "Create the venv first: python -m venv .venv"
+$BackendVenvPath = Join-Path $Root "backend\.venv\Scripts\Activate.ps1"
+$RootVenvPath = Join-Path $Root ".venv\Scripts\Activate.ps1"
+
+if (Test-Path $BackendVenvPath) {
+    $ActivateScript = $BackendVenvPath
+} elseif (Test-Path $RootVenvPath) {
+    $ActivateScript = $RootVenvPath
+} else {
+    Write-Error "Create the venv first: python -m venv .venv (or backend/.venv)"
     exit 1
 }
 
 Write-Host "Starting backend on http://localhost:8000 ..."
 Start-Process powershell -ArgumentList @(
     "-NoExit", "-Command",
-    "Set-Location '$Root'; .\.venv\Scripts\Activate.ps1; python -m backend.app"
+    "Set-Location '$Root'; & '$ActivateScript'; python -m backend.app"
 )
 
 Start-Sleep -Seconds 2

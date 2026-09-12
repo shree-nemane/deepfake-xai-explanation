@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   History as HistoryIcon, 
-  FileText, 
   ChevronRight, 
-  Trash2, 
-  ExternalLink,
   ShieldAlert,
   ShieldCheck,
-  Calendar
+  Calendar,
+  Inbox
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -47,21 +45,32 @@ const History = ({ onViewReport }) => {
           <HistoryIcon size={24} className="text-primary" />
           Forensic Audit History
         </h2>
-        <span className="text-xs text-muted font-mono">{reports.length} Reports Found</span>
+        <div className="flex items-center gap-2">
+          <span className="status-pill" style={{ background: 'var(--primary-soft)', color: 'var(--primary-light)', border: '1px solid rgba(99,102,241,0.2)' }}>
+            {reports.length} {reports.length === 1 ? 'Report' : 'Reports'}
+          </span>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {reports.length === 0 ? (
-          <div className="glass p-12 text-center text-muted">
-            No forensic investigations found. Start your first audit to see it here.
+          <div className="glass empty-state">
+            <div className="empty-state-icon">
+              <Inbox size={36} className="text-primary" style={{ opacity: 0.6 }} />
+            </div>
+            <h3 className="text-lg font-bold mb-2">No Investigations Yet</h3>
+            <p className="text-sm text-muted max-w-md">
+              Your forensic audit history is empty. Upload an audio file and run your first investigation to see results here.
+            </p>
           </div>
         ) : (
-          reports.map((report) => (
+          reports.map((report, i) => (
             <motion.div 
               key={report.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass glass-hover p-4 flex items-center justify-between group cursor-pointer"
+              transition={{ delay: i * 0.04 }}
+              className={`glass glass-hover history-card p-4 flex items-center justify-between group cursor-pointer ${report.risk_score > 50 ? 'history-card-danger' : 'history-card-safe'}`}
               onClick={() => onViewReport(report)}
             >
               <div className="flex items-center gap-4">
@@ -70,7 +79,7 @@ const History = ({ onViewReport }) => {
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-bold truncate max-w-[200px]">{report.filename}</h3>
+                  <h3 className="text-sm font-bold truncate" style={{ maxWidth: '320px' }}>{report.filename}</h3>
                   <div className="flex items-center gap-3 text-[10px] text-muted font-medium uppercase mt-1">
                     <span className="flex items-center gap-1"><Calendar size={10} /> {new Date(report.created_at).toLocaleDateString()}</span>
                     <span className="w-1 h-1 rounded-full bg-white/20"></span>

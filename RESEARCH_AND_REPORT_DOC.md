@@ -551,32 +551,30 @@ Explicit origins: `http://localhost:5173`, `127.0.0.1:5173` (and 5174). **Not** 
 
 ### 14.1 User journeys
 
-1. **Investigate** → upload WAV/MP3 → async job → SSE/poll progress → auto-navigate to Dashboard  
-2. **Dashboard Overview** → verdict banner, consensus, evidence graph summary, feature analysis, agents grid, chunk inspector, heatmap, report export  
-3. **Open Explainability** → portal drawer: SHAP, sensitivity, Plotly graph (deferred load + error boundary)  
-4. **Forensic Explanation tab** → narrative sections, contradiction alerts, evidence tables  
-5. **History** → `GET /analyze/history` → `GET /analyze/{id}` → Dashboard  
+1. **New Investigation** → Upload or 1-click test specimen selection (`fake1.wav`, `adi.wav`) → async job → SSE/poll progress → auto-navigate to Forensic Report
+2. **Forensic Report (Overview)** → Executive verdict banner with active evidence file, 4-Agent Consensus Bench, continuous audio timeline & chunk inspector (Mel preview + suspicion rationale), forensic feature telemetry, case dossier export toolbar
+3. **Forensic Explanation View** → Seamless tab containing deterministic case narrative, contradiction alerts (D-01 Voice Clone, D-02 Splice), exact Game-Theoretic SHAP feature attributions, and counterfactual sensitivity sliders
+4. **Audit History** → `GET /analyze/history` → `GET /analyze/{id}` → Forensic Report
+5. **System Telemetry** → Aggregate case analytics and confidence bucket distribution
 
 ### 14.2 Key UI components
 
 | Component | Role |
 |-----------|------|
-| `ChunkEvidenceExplorer` | Timeline legend, segment selection, suspicion card, mel panel, agent table, heatmap |
-| `TimelinePanel` | Hover tooltips; click-to-select segment |
-| `TemporalHeatmap` | Grad-CAM with band selection; callout above image (no clipped tooltips) |
-| `ReportSummaryExport` | Copy/download text summary |
-| `ExplainabilityDrawer` | Portal + deferred Plotly |
-| `FeatureAnalysisPanel` | Intake, quality, neural signals, acoustic ranking, **string-safe warnings** |
+| `ConsensusPanel` | Unified 4-Agent Consensus Bench (ConvNeXt Spectral, WavLM Phonetic, Acoustic Biological, and Signal Reliability) |
+| `ChunkEvidenceExplorer` | Continuous timeline legend, segment selection, suspicion rationale card, Mel spectrogram panel, and temporal agent snapshots |
+| `TimelinePanel` | Hover tooltips; click-to-select temporal segment with event classification |
+| `TemporalHeatmap` | Grad-CAM spectrogram focus map with band selection |
+| `FeatureAnalysisPanel` | Evidence intake, neural classifier signals, biological vocal tract deviation rankings (z-scores), and analyst diagnostic notes |
+| `ForensicExplanationTab` | Unified explainability tab embedding narrative sections, contradiction alerts, SHAP attributions, and counterfactual sensitivity sliders |
+| `ReportSummaryExport` | Case dossier export toolbar with 1-click copy summary, `.txt` audit report download, and `.json` evidence file export |
+| `Sidebar` | 4-tier navigation (New Investigation, Forensic Report with dynamic active badge, Audit History, System Telemetry) with live engine status |
 
-### 14.3 Client-side normalization
+### 14.3 Client-side normalization & stabilization
 
-`frontend/src/utils/normalizeReport.js` — ensures diagnostic warnings are render-safe; merges `mel_previews` on load.
-
-`frontend/src/components/layout/ErrorBoundary.jsx` — prevents full-app blank screen on render errors.
-
-### 14.4 Known UI defect fixed (2026-05-26)
-
-Rendering `{category, message}` warning objects directly in React caused **fatal render crash** (observed as full-screen slate/blue). Fixed in `FeatureAnalysisPanel` via `collectDiagnosticWarnings()`.
+- `frontend/src/utils/normalizeReport.js` — ensures diagnostic warnings are render-safe; merges `mel_previews` on load.
+- `frontend/src/components/layout/ErrorBoundary.jsx` — prevents full-app blank screen on render errors.
+- **Architectural Consolidation (2026-09-13)**: Consolidated duplicate agent cards, eliminated duplicate signal quality metrics, and unified explainability into a cohesive, non-fragmented investigative view.
 
 ---
 

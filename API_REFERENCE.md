@@ -35,7 +35,7 @@ Upload and analyze audio in a single blocking request. Suitable for tests and si
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `file` | file | yes | Audio file (`.wav` or `.mp3`) |
+| `file` | file | yes | Audio file (`.wav`, `.flac`, `.mp3`, or `.ogg`) |
 
 **Success:** `200` — `AnalysisResponse` (see schema below)
 
@@ -66,7 +66,7 @@ Start background analysis and receive a job snapshot immediately.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `file` | file | yes | Audio file (`.wav` or `.mp3`) |
+| `file` | file | yes | Audio file (`.wav`, `.flac`, `.mp3`, or `.ogg`) |
 
 **Response 200 — Job snapshot**
 
@@ -153,6 +153,38 @@ Load a persisted full report by ID.
 **Success:** `200` — same object as `AnalysisResponse` stored in `Report.full_response`
 
 **Errors:** `404` if report missing
+
+---
+
+## Built-in Demo Specimens
+
+### `GET /samples`
+
+List available demonstration audio files bundled for quick 1-click authenticity verification.
+
+**Response 200 — array**
+
+```json
+[
+  {
+    "filename": "fake1.wav",
+    "name": "Synthetic Clone Specimen",
+    "type": "synthetic"
+  },
+  {
+    "filename": "adi.wav",
+    "name": "Authentic Human Specimen",
+    "type": "authentic"
+  }
+]
+```
+
+### `GET /samples/{filename}`
+
+Stream the audio binary file for a specified demo specimen.
+
+**Success:** `200` — `audio/wav` binary stream  
+**Errors:** `404` if specimen file does not exist
 
 ---
 

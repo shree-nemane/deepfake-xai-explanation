@@ -1,38 +1,25 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, ShieldAlert, Activity, ArrowRight, Brain } from 'lucide-react';
-import AgentCard from '../../components/forensic/AgentCard';
+import { ShieldCheck, ShieldAlert, ArrowRight, Brain, RotateCcw } from 'lucide-react';
 import ConsensusPanel from '../../components/forensic/ConsensusPanel';
 import ChunkEvidenceExplorer from '../../components/forensic/ChunkEvidenceExplorer';
 import ReportSummaryExport from '../../components/forensic/ReportSummaryExport';
-import EvidenceGraph from '../../components/forensic/EvidenceGraph';
 import FeatureAnalysisPanel from '../../components/forensic/FeatureAnalysisPanel';
-import ReliabilityPanel from '../../components/forensic/ReliabilityPanel';
-import ExplainabilityDrawer from '../../components/explainability/ExplainabilityDrawer';
 import DashboardViewTabs from '../../components/explainability/DashboardViewTabs';
 import ForensicExplanationTab from '../../components/explainability/ForensicExplanationTab';
 
 const DashboardOverview = ({ result }) => (
   <div className="grid-container">
-    <div className="span-4">
-      <ConsensusPanel consensus={result.consensus} agents={result.agents} />
-    </div>
-
-    <div className="span-8">
-      <EvidenceGraph
-        evidenceGraph={result.xai?.evidence_graph}
-        agents={result.agents}
-        consensus={result.consensus}
-        diagnostics={result.diagnostics}
+    {/* Tier 1: Unified 4-Agent Consensus Bench */}
+    <div className="span-12">
+      <ConsensusPanel 
+        consensus={result.consensus} 
+        agents={result.agents} 
+        diagnostics={result.diagnostics} 
       />
     </div>
 
-    {result.agents.reliability && (
-      <div className="span-12 mt-4">
-        <ReliabilityPanel agent={result.agents.reliability} />
-      </div>
-    )}
-
+    {/* Tier 2: Forensic Feature Telemetry (Intake, Neural Signals, Acoustic Deviations, Notes) */}
     <div className="span-12">
       <FeatureAnalysisPanel
         featureAnalysis={result.feature_analysis}
@@ -41,23 +28,12 @@ const DashboardOverview = ({ result }) => (
       />
     </div>
 
-    <div className="span-12 mt-4">
-      <h3 className="flex items-center gap-2 mb-4 text-sm font-bold uppercase tracking-wider text-primary">
-        <Activity size={18} /> Independent Forensic Agents
-      </h3>
-      <div className="grid grid-cols-4 gap-6">
-        {Object.entries(result.agents)
-          .filter(([key]) => key !== 'reliability')
-          .map(([key, agent], i) => (
-            <AgentCard key={key || i} agent={agent} />
-          ))}
-      </div>
-    </div>
-
+    {/* Tier 2: Interactive Continuous Audio Timeline & Chunk Inspector */}
     <div className="span-12">
       <ChunkEvidenceExplorer result={result} />
     </div>
 
+    {/* Tier 3: Case Dossier Export Toolbar */}
     <div className="span-12">
       <ReportSummaryExport result={result} />
     </div>
@@ -65,7 +41,6 @@ const DashboardOverview = ({ result }) => (
 );
 
 const Dashboard = ({ result, onReset }) => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeView, setActiveView] = useState('overview');
 
   if (!result) return null;
@@ -79,19 +54,31 @@ const Dashboard = ({ result, onReset }) => {
       animate={{ opacity: 1 }}
       className="flex flex-col gap-6 pb-20"
     >
+      {/* Executive Verdict Banner */}
       <div className={`verdict-banner glass ${isFake ? 'fake' : isInconclusive ? 'warning' : 'real'}`}>
-        <div className="verdict-icon-container">
+        <div className="verdict-icon-container shrink-0">
           {isFake || isInconclusive ? (
-            <ShieldAlert size={40} className={isFake ? 'text-error' : 'text-warning'} />
+            <ShieldAlert size={36} className={isFake ? 'text-error' : 'text-warning'} />
           ) : (
-            <ShieldCheck size={40} className="text-success" />
+            <ShieldCheck size={36} className="text-success" />
           )}
         </div>
 
         <div className="flex flex-col flex-1 min-w-0">
-          <h2
-            className={`verdict-title ${isFake ? 'text-error' : isInconclusive ? 'text-warning' : 'text-success'}`}
-          >
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+              isFake ? 'bg-error/20 text-error' : isInconclusive ? 'bg-warning/20 text-warning' : 'bg-success/20 text-success'
+            }`}>
+              {isFake ? 'Synthesis Detected' : isInconclusive ? 'Inconclusive' : 'Authentic Human Voice'}
+            </span>
+            {result.filename && (
+              <span className="text-[11px] font-mono text-muted">
+                Evidence: <strong className="text-white">{result.filename}</strong>
+              </span>
+            )}
+          </div>
+
+          <h2 className={`verdict-title ${isFake ? 'text-error' : isInconclusive ? 'text-warning' : 'text-success'}`}>
             {isFake
               ? 'Manipulated Content Detected'
               : isInconclusive
@@ -99,50 +86,65 @@ const Dashboard = ({ result, onReset }) => {
                 : 'Authentic Content Verified'}
           </h2>
           <p className="verdict-subtitle">
-            Based on multi-agent consensus analysis and temporal convergence tracking.
+            Evaluated by multi-agent panel with dynamic SNR suppression and temporal timeline verification.
           </p>
         </div>
 
-        <div className="verdict-stats flex gap-8">
+        <div className="verdict-stats flex gap-6 items-center">
           <div className="text-center">
-            <div className="text-[10px] uppercase font-bold text-muted mb-1 tracking-widest">Confidence</div>
-            <div className="text-xl font-bold">{Math.round(result.consensus.confidence * 100)}%</div>
+            <div className="text-[10px] uppercase font-bold text-muted mb-0.5 tracking-wider">Confidence</div>
+            <div className="text-xl font-bold font-mono text-white">
+              {Math.round((result.consensus?.confidence || 0) * 100)}%
+            </div>
           </div>
           <div className="text-center">
-            <div className="text-[10px] uppercase font-bold text-muted mb-1 tracking-widest">Convergence</div>
-            <div
-              className={`text-xl font-bold ${result.consensus.convergence_strength > 0.8 ? 'text-success' : 'text-warning'}`}
-            >
-              {Math.round(result.consensus.convergence_strength * 100)}%
+            <div className="text-[10px] uppercase font-bold text-muted mb-0.5 tracking-wider">Convergence</div>
+            <div className={`text-xl font-bold font-mono ${result.consensus?.convergence_strength > 0.8 ? 'text-success' : 'text-warning'}`}>
+              {Math.round((result.consensus?.convergence_strength || 0) * 100)}%
             </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          className="btn bg-primary hover:bg-primary/90 text-white px-5 py-3 flex items-center gap-2 text-sm font-bold rounded-xl shrink-0"
-          onClick={() => setDrawerOpen(true)}
-        >
-          <Brain size={18} /> Open Explainability
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            className="btn btn-ghost text-xs flex items-center gap-1.5"
+            onClick={() => setActiveView(activeView === 'overview' ? 'explanation' : 'overview')}
+            title="Toggle between Overview and Forensic Explainability"
+          >
+            <Brain size={15} />
+            <span>{activeView === 'overview' ? 'Explainability' : 'Overview'}</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary text-xs flex items-center gap-1.5"
+            onClick={onReset}
+            title="Start new evidence scan"
+          >
+            <RotateCcw size={14} />
+            <span>New Scan</span>
+          </button>
+        </div>
       </div>
 
+      {/* View Switcher: Overview vs Forensic Explanation */}
       <DashboardViewTabs activeView={activeView} onChange={setActiveView} />
 
+      {/* Active Tab View */}
       {activeView === 'overview' ? (
         <DashboardOverview result={result} />
       ) : (
         <ForensicExplanationTab result={result} />
       )}
 
-      <ExplainabilityDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} result={result} />
-
-      <div className="flex justify-center mt-12 mb-8">
+      {/* Bottom Action */}
+      <div className="flex justify-center mt-8 mb-4">
         <button
-          className="btn bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] px-10 py-4 flex items-center gap-3 text-base font-bold transition-all duration-300 transform hover:-translate-y-1 rounded-xl"
+          className="btn btn-primary px-8 py-3 flex items-center gap-2 text-sm font-semibold"
           onClick={onReset}
         >
-          <ArrowRight size={20} /> Start New Investigation
+          <ArrowRight size={16} />
+          <span>Analyze Another Evidence Recording</span>
         </button>
       </div>
     </motion.div>

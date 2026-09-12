@@ -14,6 +14,7 @@ import History from './features/history/History';
 import Analytics from './features/analysis/Analytics';
 import ErrorBoundary from './components/layout/ErrorBoundary';
 import { mergeMelPreviews, normalizeReport } from './utils/normalizeReport';
+import { FileAudio, Play } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -35,6 +36,25 @@ const App = () => {
       setResult(null);
       setError(null);
       setProgress(null);
+    }
+  };
+
+  const handleLoadSample = async (sampleFilename) => {
+    try {
+      setError(null);
+      setIsAnalyzing(false);
+      const res = await axios.get(`${API_BASE}/samples/${sampleFilename}`, {
+        responseType: 'blob',
+      });
+      const sampleFile = new File([res.data], sampleFilename, { type: 'audio/wav' });
+      setFile(sampleFile);
+      setResult(null);
+      setProgress(null);
+      setShowUploader(true);
+      setActiveTab('investigate');
+    } catch (err) {
+      console.error('Failed to load specimen sample:', err);
+      setError(`Failed to load specimen sample: ${err.message}`);
     }
   };
 
@@ -179,14 +199,14 @@ const App = () => {
 
   return (
     <div className="app-layout">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} hasActiveResult={!!result} />
       
       <main className="main-content">
         <div className="content-wrapper">
           <Header title={
             activeTab === 'investigate' ? 'Forensic Investigation' :
-            activeTab === 'dashboard' ? 'Analysis Dashboard' :
-            activeTab === 'history' ? 'Audit History' : 'Intelligence Suite'
+            activeTab === 'dashboard' ? 'Forensic Report' :
+            activeTab === 'history' ? 'Audit History' : 'System Telemetry'
           } />
 
           <AnimatePresence mode="wait">
@@ -198,7 +218,7 @@ const App = () => {
                 exit={{ opacity: 0, y: -10 }}
               >
                 {!showUploader ? (
-                  <Hero onStart={() => setShowUploader(true)} />
+                  <Hero onStart={() => setShowUploader(true)} onLoadSample={handleLoadSample} />
                 ) : (
                   <Uploader 
                     file={file} 
@@ -207,21 +227,43 @@ const App = () => {
                     isAnalyzing={isAnalyzing}
                     progress={progress}
                     error={error}
+                    onLoadSample={handleLoadSample}
                   />
                 )}
               </motion.div>
             )}
 
-            {activeTab === 'dashboard' && result && (
+            {activeTab === 'dashboard' && (
               <motion.div
                 key="dashboard"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <ErrorBoundary onReset={resetInvestigation}>
-                  <Dashboard result={result} onReset={resetInvestigation} />
-                </ErrorBoundary>
+                {result ? (
+                  <ErrorBoundary onReset={resetInvestigation}>
+                    <Dashboard result={result} onReset={resetInvestigation} />
+                  </ErrorBoundary>
+                ) : (
+                  <div className="empty-state glass p-12 text-center flex flex-col items-center justify-center max-w-xl mx-auto my-12">
+                    <div className="empty-state-icon mb-4">
+                      <FileAudio size={40} className="text-primary-light" />
+                    </div>
+                    <h2 className="text-xl font-bold mb-2">No Active Investigation</h2>
+                    <p className="text-muted text-sm max-w-md mb-6">
+                      Upload an audio recording or select a report from Audit History to inspect multi-agent consensus, temporal evidence, and explainability attributions.
+                    </p>
+                    <button 
+                      className="btn btn-primary flex items-center gap-2"
+                      onClick={() => {
+                        setActiveTab('investigate');
+                        setShowUploader(true);
+                      }}
+                    >
+                      <Play size={16} /> Start Investigation
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -248,7 +290,7 @@ const App = () => {
             )}
           </AnimatePresence>
 
-          <footer className="mt-auto pt-10 border-t border-white/5 text-center text-[10px] text-muted">
+          <footer className="app-footer">
             © 2026 Deepfake Forensic AI — Professional Investigation Suite
           </footer>
         </div>

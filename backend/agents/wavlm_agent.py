@@ -69,16 +69,12 @@ class WavLMAgent(BaseAgent):
                     detail=f"RMS={rms:.2e}",
                 )
 
-            # ── extract embeddings via shared model hub ────────────────
-            mean_embeddings, phonetic_instability = (
-                model_hub.wavlm_handler.extract_embeddings(audio_chunk, sr=16000)
+            # ── extract embeddings and temporal entropy in single pass ─
+            mean_embeddings, phonetic_instability, temporal_entropy = (
+                model_hub.wavlm_handler.extract_embeddings(
+                    audio_chunk, sr=16000, return_entropy=True
+                )
             )
-
-            # ── temporal entropy (variance across time dim) ────────────
-            # Re-run a forward pass is wasteful; instead compute from
-            # the mean-pooled embedding's spread.  For a richer signal
-            # we do a lightweight re-inference to grab last_hidden_state.
-            temporal_entropy = self._compute_temporal_entropy(audio_chunk)
 
             # ── embedding norm ─────────────────────────────────────────
             embedding_norm = float(torch.norm(mean_embeddings, p=2).item())

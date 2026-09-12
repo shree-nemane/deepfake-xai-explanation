@@ -524,15 +524,75 @@ async def get_history(db: Session = Depends(get_db)):
         if not r.full_response:
             continue
         consensus = r.full_response.get("consensus", {})
+        verdict = consensus.get("verdict", "inconclusive")
+        confidence = float(consensus.get("confidence", 0.0))
+        fake_prob = consensus.get("fake_probability")
+
+        if verdict == "fake":
+            risk_score = float(fake_prob * 100.0) if fake_prob is not None else float(confidence * 100.0)
+        elif verdict == "real":
+            risk_score = float((1.0 - confidence) * 100.0)
+        else:
+            # Inconclusive / degraded audio: use fake_probability if available, or neutral 50.0%
+            risk_score = float(fake_prob * 100.0) if fake_prob is not None else 50.0
+
         history_list.append({
             "id": r.id,
             "filename": r.filename,
             "created_at": r.created_at,
-            "prediction": consensus.get("verdict", "inconclusive"),
-            "confidence": consensus.get("confidence", 0.0),
-            "risk_score": (consensus.get("fake_probability", 0.0) * 100) if consensus.get("verdict") == "fake" else ((1 - consensus.get("confidence", 1.0)) * 100)
+            "prediction": verdict,
+            "confidence": confidence,
+            "risk_score": round(risk_score, 2)
         })
     return history_list
+
+@router.get("/samples")
+async def get_demo_samples():
+    """List preloaded forensic test specimens for 1-click verification."""
+    return [
+        {
+            "id": "sample-fake1",
+            "filename": "fake1.wav",
+            "title": "Synthetic AI Voice Clone",
+            "description": "Neural text-to-speech clone exhibiting frame-level acoustic and phonetic anomalies.",
+            "verdict": "fake",
+            "badge": "Synthetic Clone",
+            "duration": "4.9s",
+            "format": "48 kHz WAV"
+        },
+        {
+            "id": "sample-adi",
+            "filename": "adi.wav",
+            "title": "Authentic Human Voice",
+            "description": "Natural human speech recording with genuine vocal tract harmonics and micro-jitter.",
+            "verdict": "real",
+            "badge": "Authentic Human",
+            "duration": "7.3s",
+            "format": "48 kHz WAV"
+        },
+        {
+            "id": "sample-preeti",
+            "filename": "preeti.wav",
+            "title": "Authentic Conversational Voice",
+            "description": "Clean human vocal recording with standard spectral flatness and biological pitch contours.",
+            "verdict": "real",
+            "badge": "Authentic Human",
+            "duration": "7.1s",
+            "format": "48 kHz WAV"
+        }
+    ]
+
+@router.get("/samples/{filename}")
+async def get_demo_sample_file(filename: str):
+    """Download demo audio specimen file."""
+    if not filename.endswith(".wav") or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid sample filename.")
+    sample_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "mock_dataset", "audio"))
+    file_path = os.path.join(sample_dir, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Sample file not found.")
+    from fastapi.responses import FileResponse
+    return FileResponse(file_path, media_type="audio/wav", filename=filename)
 
 @router.get("/{report_id}")
 async def get_report(report_id: str, db: Session = Depends(get_db)):
@@ -863,8 +923,8 @@ def _run_analysis_from_path(temp_path, filename, db, report_id=None, progress_ca
 
 @router.post("/", response_model=AnalysisResponse)
 async def analyze_audio(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.lower().endswith(('.wav', '.mp3')):
-        raise HTTPException(status_code=400, detail="Invalid file type.")
+    if not file.filename.lower().endswith(('.wav', '.mp3', '.flac', '.ogg')):
+        raise HTTPException(status_code=400, detail="Invalid file type. Supported: .wav, .mp3, .flac, .ogg")
 
     file_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1]
@@ -932,8 +992,8 @@ def _run_analysis_job(job_id, temp_path, filename):
 
 @router.post("/jobs")
 async def create_analysis_job(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    if not file.filename.lower().endswith(('.wav', '.mp3')):
-        raise HTTPException(status_code=400, detail="Invalid file type.")
+    if not file.filename.lower().endswith(('.wav', '.mp3', '.flac', '.ogg')):
+        raise HTTPException(status_code=400, detail="Invalid file type. Supported: .wav, .mp3, .flac, .ogg")
 
     job_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1]

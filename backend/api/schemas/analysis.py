@@ -31,6 +31,8 @@ class TimelineEventSchema(BaseModel):
     details: Optional[Dict[str, Any]] = None
     deep_reasoning: Optional[List[str]] = None
     threat_warnings: Optional[List[Dict[str, Any]]] = None
+    mel_preview_base64: Optional[str] = None
+    segment_count: Optional[int] = 1
 
 class SampleRatesSchema(BaseModel):
     semantic: int
@@ -53,11 +55,14 @@ class AnalysisResponse(BaseModel):
     consensus: ConsensusSchema
     agents: Dict[str, AgentOutputSchema]
     timeline: List[TimelineEventSchema]
+    timeline_raw_count: Optional[int] = None
+    timeline_display_count: Optional[int] = None
     preprocessing: Optional[Dict[str, Any]] = None
     feature_analysis: Optional[Dict[str, Any]] = None
     diagnostics: Optional[Dict[str, Any]] = None
     xai: Optional[Dict[str, Any]] = None
     narrative: Optional[Dict[str, Any]] = None
     heatmap_base64: Optional[str] = None
+    mel_previews: Optional[Dict[str, str]] = None
     processing_metadata: Optional[ProcessingMetadataSchema] = None
     created_at: datetime

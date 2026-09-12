@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, AlertTriangle, BarChart2, Brain, Gauge } from 'lucide-react';
+import { AlertTriangle, BarChart2, Brain, Gauge } from 'lucide-react';
 import { collectDiagnosticWarnings, warningKey } from '../../utils/diagnostics';
 
 const formatPercent = (value) => `${Math.round((Number(value) || 0) * 100)}%`;
@@ -43,7 +43,6 @@ const FeatureAnalysisPanel = ({ featureAnalysis, preprocessing, diagnostics }) =
   if (!featureAnalysis) return null;
 
   const prep = preprocessing || featureAnalysis.preprocessing || {};
-  const quality = featureAnalysis.signal_quality || {};
   const acousticFeatures = featureAnalysis.acoustic_features || [];
   const neuralSignals = featureAnalysis.neural_signals || [];
   const warnings = collectDiagnosticWarnings(diagnostics);
@@ -52,9 +51,9 @@ const FeatureAnalysisPanel = ({ featureAnalysis, preprocessing, diagnostics }) =
     <section className="feature-analysis-panel">
       <div className="feature-section-header">
         <div>
-          <h3 className="panel-title">Feature Analysis</h3>
+          <h3 className="panel-title">Forensic Feature Telemetry</h3>
           <p className="feature-subtitle">
-            Distinct forensic signals extracted from preprocessing, signal quality, acoustic deviation, and neural agents.
+            Acoustic deviations and neural feature representations extracted across active speech segments.
           </p>
         </div>
         <div className={`review-pill review-${diagnostics?.review_level || 'moderate_trust'}`}>
@@ -63,46 +62,41 @@ const FeatureAnalysisPanel = ({ featureAnalysis, preprocessing, diagnostics }) =
       </div>
 
       <div className="feature-grid">
-        <div className="feature-card">
+        {/* Evidence Intake Metrics */}
+        <div className="feature-card" style={{ gridColumn: 'span 4' }}>
           <div className="feature-card-title">
-            <Gauge size={16} /> Intake
+            <Gauge size={16} /> Evidence Intake
           </div>
           <div className="stat-list">
             <span>Original duration <b>{formatNumber(prep.original_duration_sec, 2)}s</b></span>
             <span>Speech coverage <b>{formatPercent(prep.speech_coverage)}</b></span>
             <span>VAD segments <b>{prep.vad_segments ?? 0}</b></span>
-            <span>Chunks analyzed <b>{prep.chunk_count ?? 0}</b></span>
+            <span>Analyzed chunks <b>{prep.chunk_count ?? 0}</b></span>
           </div>
         </div>
 
-        <div className="feature-card">
+        {/* Neural Signal Distribution */}
+        <div className="feature-card" style={{ gridColumn: 'span 8' }}>
           <div className="feature-card-title">
-            <Activity size={16} /> Signal Quality
-          </div>
-          <div className="stat-list">
-            <span>SNR <b>{formatNumber(quality.snr_db, 1)} dB</b></span>
-            <span>Clipping <b>{formatPercent(quality.clipping_ratio)}</b></span>
-            <span>Flatness <b>{formatNumber(quality.spectral_flatness, 4)}</b></span>
-            <span>Reliability <b>{formatPercent(quality.reliability_score)}</b></span>
-          </div>
-        </div>
-
-        <div className="feature-card feature-card-wide">
-          <div className="feature-card-title">
-            <Brain size={16} /> Neural Signals
+            <Brain size={16} /> Neural Classifier Signals
           </div>
           <div className="signal-list">
-            {neuralSignals.map((signal) => (
-              <SignalRow key={signal.name} signal={signal} />
-            ))}
+            {neuralSignals.length ? (
+              neuralSignals.map((signal) => (
+                <SignalRow key={signal.name} signal={signal} />
+              ))
+            ) : (
+              <p className="empty-note">Neural feature vectors nominal.</p>
+            )}
           </div>
         </div>
       </div>
 
       <div className="feature-detail-grid">
+        {/* Authoritative Acoustic Deviation Ranking */}
         <div className="feature-card feature-card-wide">
           <div className="feature-card-title">
-            <BarChart2 size={16} /> Acoustic Deviation Ranking
+            <BarChart2 size={16} /> Biological Vocal Tract Deviations (Z-Scores)
           </div>
           {acousticFeatures.length ? (
             <div className="feature-table">
@@ -121,13 +115,14 @@ const FeatureAnalysisPanel = ({ featureAnalysis, preprocessing, diagnostics }) =
               ))}
             </div>
           ) : (
-            <p className="empty-note">No ranked acoustic deviations were produced for this sample.</p>
+            <p className="empty-note">No ranked acoustic deviations observed in speech baselines.</p>
           )}
         </div>
 
+        {/* Analyst Notes & Decision Reliability */}
         <div className="feature-card">
           <div className="feature-card-title">
-            <AlertTriangle size={16} /> Analyst Notes
+            <AlertTriangle size={16} /> Analyst Notes &amp; Integrity
           </div>
           {warnings.length ? (
             <ul className="warning-list">
@@ -136,7 +131,7 @@ const FeatureAnalysisPanel = ({ featureAnalysis, preprocessing, diagnostics }) =
               ))}
             </ul>
           ) : (
-            <p className="empty-note">No major reliability warnings were raised.</p>
+            <p className="empty-note">No reliability or calibration anomalies reported.</p>
           )}
           <div className="decision-score">
             <span>Decision reliability</span>

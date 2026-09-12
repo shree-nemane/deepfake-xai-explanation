@@ -10,8 +10,9 @@ logger = logging.getLogger(__name__)
 
 # Anomaly threshold: scores above this lean towards fake (raised post-UAT to reduce false fake)
 _ANOMALY_THRESHOLD = 0.52
-# Scaling factor to map distance-from-threshold into [0, 0.99] confidence
-_CONFIDENCE_SCALE = 2.2
+# Scaling factor to map distance-from-threshold into [0.50, 0.99] confidence
+_CONFIDENCE_SCALE = 1.0
+
 
 
 class AcousticAgent(BaseAgent):
@@ -58,11 +59,9 @@ class AcousticAgent(BaseAgent):
             # --- 4. Verdict -------------------------------------------
             verdict = "fake" if overall_anomaly > _ANOMALY_THRESHOLD else "real"
 
-            # --- 5. Confidence ----------------------------------------
-            confidence = min(
-                abs(overall_anomaly - _ANOMALY_THRESHOLD) * _CONFIDENCE_SCALE,
-                0.99,
-            )
+            # --- 5. Confidence (centered at 0.50 at decision boundary, scaling to 0.99) ---
+            distance = abs(overall_anomaly - _ANOMALY_THRESHOLD)
+            confidence = float(np.clip(0.50 + distance * _CONFIDENCE_SCALE, 0.50, 0.99))
 
             # --- 6. Uncertainty (inversely related to confidence) ------
             uncertainty = round(1.0 - confidence, 4)

@@ -1,6 +1,9 @@
 import librosa
 import numpy as np
-import pyloudnorm as pyln
+try:
+    import pyloudnorm as pyln
+except ImportError:
+    pyln = None
 import torch
 import warnings
 import os
@@ -64,8 +67,15 @@ class AudioProcessor:
 
     def normalize_lufs(self, y, sr, target_lufs=-23.0):
         """LUFS normalization for consistent loudness. Returns normalized audio and metadata."""
-        meter = pyln.Meter(sr)
         metadata = {"original_lufs": None, "target_lufs": target_lufs, "gain_applied": 0.0}
+        if pyln is None:
+            max_val = np.max(np.abs(y)) if len(y) else 0.0
+            if max_val > 0:
+                metadata["gain_applied"] = 1.0 / max_val
+                return y / max_val, metadata
+            return y, metadata
+
+        meter = pyln.Meter(sr)
         
         try:
             loudness = meter.integrated_loudness(y)
@@ -86,10 +96,11 @@ class AudioProcessor:
                 return y / max_val, metadata
             return y, metadata
 
-    def process_dual_stream(self, file_path):
+    def process_dual_stream(self, file_path, concatenate_speech=False):
         """
         Creates 16kHz and 48kHz streams.
         Applies VAD and LUFS normalization.
+        By default preserves continuous audio so chunk timestamps map 1:1 to the original recording.
         """
         # Load at highest required SR
         y_48k, sr_48k = librosa.load(file_path, sr=48000)
@@ -120,8 +131,18 @@ class AudioProcessor:
             speech_pad_ms=250
         )
         
-        # We will use the timestamps to mask or extract from both streams
+        # Determine speech duration and coverage
         if speech_timestamps:
+            active_speech_samples = sum(ts['end'] - ts['start'] for ts in speech_timestamps)
+            active_duration_sec = active_speech_samples / 16000.0
+        else:
+            active_speech_samples = len(y_16k_norm)
+            active_duration_sec = original_duration
+
+        speech_coverage = active_duration_sec / original_duration if original_duration else 0.0
+
+        # Preserve full continuous timeline unless destructive concatenation is explicitly requested
+        if concatenate_speech and speech_timestamps:
             active_16k = torch.cat([tensor_16k[ts['start']:ts['end']] for ts in speech_timestamps]).numpy()
             
             # Map timestamps to 48k stream
@@ -140,12 +161,16 @@ class AudioProcessor:
             "48k": active_48k,
             "metadata": {
                 "original_duration_sec": original_duration,
-                "active_duration_sec": len(active_16k) / 16000 if len(active_16k) else 0.0,
-                "speech_coverage": (len(active_16k) / 16000) / original_duration if original_duration else 0.0,
+                "active_duration_sec": active_duration_sec,
+                "speech_coverage": speech_coverage,
                 "original_peak": original_peak,
                 "original_rms": original_rms,
                 "global_clipping_ratio": clipping_ratio,
                 "lufs": lufs_metadata,
-                "vad_segments": len(speech_timestamps) if speech_timestamps else 0
+                "vad_segments": len(speech_timestamps) if speech_timestamps else 0,
+                "speech_intervals": [
+                    {"start": float(ts['start'] / 16000.0), "end": float(ts['end'] / 16000.0)}
+                    for ts in (speech_timestamps or [])
+                ]
             }
         }

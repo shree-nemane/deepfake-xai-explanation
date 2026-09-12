@@ -41,10 +41,19 @@ None — Phase 5 completed 2026-05-24.
 
 ---
 
+### Quick Tasks Completed
+
+| # | Description | Date | Status | Directory |
+|---|-------------|------|--------|-----------|
+| 20260912-p0-fixes | Fix P0 Issues (Acoustic Confidence, Jitter Scale, Mel Preview API Schema) | 2026-09-12 | complete ✓ | [20260912-p0-fixes](./quick/20260912-p0-fixes/) |
+| 20260912-p1-fixes | Fix P1 Issues (History Risk Score, WavLM Single-Pass, VAD Timeline, Dashboard Empty State) | 2026-09-12 | complete ✓ | [20260912-p1-fixes](./quick/20260912-p1-fixes/) |
+
+---
+
 ## Session Continuity
 
-Last session: 2026-05-26  
-Stopped at: Release push — UI stabilization, research doc, branch hygiene  
+Last session: 2026-09-12  
+Stopped at: Completed quick tasks 20260912-p0-fixes and 20260912-p1-fixes (P0 & P1 issues resolved)  
 Resume file: `RESEARCH_AND_REPORT_DOC.md` for paper/blackbook; `.planning/ROADMAP.md` for v1.1 ideas
 
 ## Release Notes (2026-05-26)
@@ -57,4 +66,5 @@ Resume file: `RESEARCH_AND_REPORT_DOC.md` for paper/blackbook; `.planning/ROADMA
 - **Branches:** `development` includes `.planning/`; `main` is application + docs only.
 
 ---
-*Last updated: 2026-05-26 after release push*
+*Last updated: 2026-09-12 after P0 fixes*
+

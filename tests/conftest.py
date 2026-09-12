@@ -9,6 +9,9 @@ MOCK_AUDIO_DIR = os.path.join(os.path.dirname(__file__), '..', 'mock_dataset', '
 def real_audio_path():
     path = os.path.join(MOCK_AUDIO_DIR, 'real.wav')
     if not os.path.exists(path):
+        fallback = os.path.join(MOCK_AUDIO_DIR, 'adi.wav')
+        if os.path.exists(fallback):
+            return fallback
         pytest.skip(f"Mock real audio not found at {path}")
     return path
 
@@ -16,6 +19,9 @@ def real_audio_path():
 def fake_audio_path():
     path = os.path.join(MOCK_AUDIO_DIR, 'fake.wav')
     if not os.path.exists(path):
+        fallback = os.path.join(MOCK_AUDIO_DIR, 'fake1.wav')
+        if os.path.exists(fallback):
+            return fallback
         pytest.skip(f"Mock fake audio not found at {path}")
     return path
 

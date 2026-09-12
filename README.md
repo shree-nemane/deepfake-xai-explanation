@@ -8,40 +8,39 @@ Multi-agent temporal consensus, reliability-aware suppression, exact Shapley att
 
 ## What this system does
 
-1. **Preprocesses** uploaded audio (LUFS normalization, VAD, dual 16 kHz / 48 kHz streams)
+1. **Preprocesses** uploaded audio (LUFS normalization, Silero VAD, continuous timeline preservation, dual 16 kHz / 48 kHz streams; supports WAV, FLAC, MP3, OGG)
 2. **Segments** active speech into 2-second overlapping chunks
-3. **Runs five forensic agents** per chunk (ConvNext, WavLM, AASIST, Acoustic, Reliability)
-4. **Suppresses** low-trust evidence dynamically (fail-closed below reliability 0.20)
+3. **Runs forensic agent panel** per chunk (ConvNeXt, WavLM, Acoustic, Reliability)
+4. **Suppresses** low-trust evidence dynamically based on real-time SNR and clipping
 5. **Reasons** over agreement and contradictions (voice clone, splice, partial synthesis)
-6. **Generates explainability** — exact SHAP, Level 1 counterfactual sensitivity, 6-layer evidence graph
+6. **Generates explainability** — exact Shapley values (16 coalitions), Level 1 counterfactual sensitivity, 6-layer evidence graph
 7. **Writes** deterministic narrative reports and persists everything to SQLite
-8. **Presents** results in a React investigation dashboard with live progress, explainability drawer, and forensic explanation tab
+8. **Presents** results in an investigator-grade React dashboard with a 4-Agent Consensus Bench, continuous timeline chunk inspector, integrated SHAP & counterfactual explainability, and case dossier export
 
 ---
 
 ## Architecture
 
 ```text
-Upload (React)
-    → POST /analyze/jobs + SSE progress
-        → Preprocessing (LUFS, VAD, dual-stream)
-        → 2s overlapping chunks
-        → Forensic agents (ConvNext, WavLM, AASIST, Acoustic, Reliability)
-        → Reliability suppression + consensus engine
-        → Explainability (SHAP, counterfactuals, evidence graph, narrative)
-        → SQLite persistence
-    → Dashboard + Explainability drawer + Explanation tab
+Upload / Specimen Selection (React)
+    → POST /analyze/jobs + SSE progress stream
+        → Preprocessing (EBU R128 LUFS, Silero VAD, continuous dual-stream)
+        → 2.0s overlapping temporal chunks (50% overlap)
+        → Forensic agents (ConvNeXt, WavLM single-pass, Acoustic biological, Reliability)
+        → Reliability suppression + multi-agent consensus engine
+        → Explainability (exact SHAP, counterfactuals, evidence graph, deterministic narrative)
+        → SQLite relational persistence
+    → Unified 4-Agent Consensus Bench + Continuous Timeline + Explainability View
 ```
 
 ### Forensic agents
 
 | Agent | Role |
 |-------|------|
-| **ConvNext** | Spectral / spectrogram artifact detection (48 kHz) |
-| **WavLM** | Phonetic instability and speech realism (16 kHz) |
-| **AASIST** | Deterministic waveform spoof heuristics (v1) |
-| **Acoustic** | Biological plausibility (jitter, shimmer, MFCC z-scores) |
-| **Reliability** | SNR, clipping, quality — drives suppression |
+| **ConvNeXt** | Spectral / spectrogram artifact detection (48 kHz Mel bands) |
+| **WavLM** | Phonetic instability & transformer temporal entropy (16 kHz single-pass) |
+| **Acoustic** | Biological plausibility (pitch stability, normalized jitter %, shimmer, MFCC z-scores) |
+| **Reliability** | Signal-to-noise ratio (HPSS dB), clipping ratio, spectral flatness — drives suppression |
 
 ### Explainability
 
@@ -183,13 +182,15 @@ npm run build
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/` | Health check |
-| POST | `/analyze/` | Synchronous analyze |
+| POST | `/analyze/` | Synchronous analyze (WAV, FLAC, MP3, OGG) |
 | POST | `/analyze/jobs` | Start async job |
 | GET | `/analyze/jobs/{id}/progress` | Poll progress |
 | GET | `/analyze/jobs/{id}/events` | SSE progress stream |
 | GET | `/analyze/jobs/{id}/result` | Final report |
 | GET | `/analyze/history` | Recent reports |
 | GET | `/analyze/{report_id}` | Load saved report |
+| GET | `/samples` | List built-in test specimens |
+| GET | `/samples/{filename}` | Stream specimen audio (`fake1.wav`, `adi.wav`) |
 
 Full schemas: **[API_REFERENCE.md](API_REFERENCE.md)**
 
@@ -197,9 +198,13 @@ Full schemas: **[API_REFERENCE.md](API_REFERENCE.md)**
 
 ## Frontend features
 
-- **Overview** — verdict banner, consensus, agents, feature analysis, chunk timeline inspector (mel spectrogram + suspicion card), heatmap, report export
-- **Explainability drawer** — SHAP chart, sensitivity controls, Plotly evidence graph (lazy-loaded)
-- **Forensic explanation tab** — narrative sections, contradiction alerts, evidence tables
+- **Investigation Ingestion** — Drag & drop evidence vault, format tags (WAV, FLAC, MP3, OGG), instant 1-click test specimens (`fake1.wav`, `adi.wav`), and real-time SSE progress tracking.
+- **4-Agent Consensus Bench** — Unified cards for ConvNeXt Spectral, WavLM Phonetic, Acoustic Biological, and Signal Trustworthiness agents.
+- **Continuous Timeline & Chunk Inspector** — 2.0s overlapping chunk timeline with event classification (stable, contradiction, splice), mel-spectrogram preview, and per-chunk suspicion rationales.
+- **Forensic Feature Telemetry** — Intake parameters, neural classifier risk meters, biological vocal tract deviation rankings (z-scores), and analyst diagnostic notes.
+- **Unified Forensic Explainability** — Case narrative findings, contradiction threat classification (D-01 Voice Clone, D-02 Splice), exact Game-Theoretic SHAP attributions, and counterfactual sensitivity sliders.
+- **Case Dossier Export Toolbar** — 1-click copy of executive case summary, `.txt` audit report download, and raw evidence `.json` export.
+- **Streamlined Navigation & Real Telemetry** — New Investigation, Forensic Report (with dynamic active badge), Audit History, and System Telemetry with live engine connection status.
 
 ---
 

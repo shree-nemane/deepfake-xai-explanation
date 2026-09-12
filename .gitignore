@@ -159,11 +159,19 @@ Thumbs.db
 uploads/
 *.wav
 
-# GSD / AI Agent directories
+# AI Agent and skills directories
 .agent/
+.agents/
 .codex/
 .gemini/
 .cursor/
+skills/
+**/.agent/
+**/.agents/
+**/.codex/
+**/.gemini/
+**/.cursor/
+**/.skills/
 
 evaluation_results/
 
